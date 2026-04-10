@@ -35,7 +35,7 @@ const ReportsTimeline = dynamic(
 );
 
 export default function DashboardPage() {
-  const { clients, reports, analytics } = useReports();
+  const { clients, reports, analytics, storageStrategy } = useReports();
 
   const dashboardKpis = useMemo(
     () => [
@@ -98,7 +98,7 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="mt-8 grid gap-4 lg:grid-cols-3">
+            <div className="mt-8 grid gap-4 lg:grid-cols-3">
             <Card className="border-border/60 bg-background/70">
               <Building2 className="h-8 w-8 text-primary" />
               <h4 className="mt-4 text-lg font-semibold">1. Alta de clientes</h4>
@@ -164,6 +164,9 @@ export default function DashboardPage() {
               </div>
               <p className="mt-4 text-sm text-muted-foreground">
                 El historico empezara a poblarse en cuanto registres clientes y partes reales.
+              </p>
+              <p className="mt-2 text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                Persistencia actual: {storageStrategy}
               </p>
               <Button className="mt-5" asChild>
                 <Link href="/app/partes">

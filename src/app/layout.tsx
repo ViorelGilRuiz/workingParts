@@ -9,8 +9,15 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Ibersoft Portal IT",
-  description: "Portal profesional de Ibersoft para gestion de partes tecnicos, productividad y supervision empresarial."
+  title: "WorkingParts | Ibersoft Portal IT",
+  description: "Portal profesional para tickets, partes tecnicos, clientes, supervision y facturacion ligera de Ibersoft.",
+  applicationName: "WorkingParts",
+  keywords: ["workingparts", "ibersoft", "tickets", "partes tecnicos", "soporte IT", "facturacion"],
+  openGraph: {
+    title: "WorkingParts",
+    description: "Portal premium para servicio tecnico, clientes y partes de trabajo.",
+    type: "website"
+  }
 };
 
 export default function RootLayout({

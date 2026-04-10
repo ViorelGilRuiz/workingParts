@@ -6,6 +6,8 @@ export interface User {
   role: Role;
   email: string;
   avatar: string;
+  avatarUrl?: string;
+  authSource?: "local" | "supabase";
 }
 
 export interface Client {

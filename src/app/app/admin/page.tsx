@@ -7,7 +7,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { Card } from "@/components/ui/card";
 
 export default function AdminPage() {
-  const { clients, reports } = useReports();
+  const { clients, reports, storageStrategy } = useReports();
   const signedReports = reports.filter((report) => report.hasSignature).length;
 
   return (
@@ -95,7 +95,7 @@ export default function AdminPage() {
         </div>
         <div className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
           <Settings2 className="h-4 w-4" />
-          Panel disenado para crecer hacia un backoffice completo
+          Panel disenado para crecer hacia un backoffice completo · storage {storageStrategy}
         </div>
       </Card>
     </div>

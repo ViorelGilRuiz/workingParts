@@ -1,8 +1,12 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { AuthChangeEvent, Session, User as SupabaseUser } from "@supabase/supabase-js";
 import { currentUser, teamMembers } from "@/data/demo";
 import { Role, User } from "@/types";
+import { getAuthCallbackUrl, isSupabaseConfigured } from "@/lib/env";
+import { getAvatarLabel, resolveUserRole } from "@/lib/auth/roles";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const USERS_STORAGE_KEY = "portal-incidencias-auth-users";
 const SESSION_STORAGE_KEY = "portal-incidencias-auth-session";
@@ -28,9 +32,11 @@ interface RegisterInput {
 interface AuthContextValue {
   user: User | null;
   hydrated: boolean;
-  login: (input: LoginInput) => { ok: true } | { ok: false; message: string };
-  register: (input: RegisterInput) => { ok: true } | { ok: false; message: string };
-  logout: () => void;
+  isCloudAuthEnabled: boolean;
+  login: (input: LoginInput) => Promise<{ ok: true } | { ok: false; message: string }>;
+  loginWithGoogle: (nextPath?: string) => Promise<{ ok: true } | { ok: false; message: string }>;
+  register: (input: RegisterInput) => Promise<{ ok: true } | { ok: false; message: string }>;
+  logout: () => Promise<void>;
 }
 
 const seedUsers: StoredAuthUser[] = [
@@ -56,29 +62,83 @@ function toPublicUser(user: StoredAuthUser): User {
     name: user.name,
     role: user.role,
     email: user.email,
-    avatar: user.avatar
+    avatar: user.avatar,
+    avatarUrl: user.avatarUrl,
+    authSource: user.authSource ?? "local"
   };
-}
-
-function createAvatar(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
 }
 
 function createUserId() {
   return `u-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function mapSupabaseUser(user: SupabaseUser): User {
+  const fullName =
+    user.user_metadata.full_name ??
+    user.user_metadata.name ??
+    user.email?.split("@")[0]?.replace(/[._-]/g, " ") ??
+    "Usuario";
+  const avatarUrl = user.user_metadata.avatar_url ?? user.user_metadata.picture ?? undefined;
+  const role = resolveUserRole({
+    email: user.email,
+    appRole: typeof user.app_metadata.role === "string" ? user.app_metadata.role : null,
+    userRole: typeof user.user_metadata.role === "string" ? user.user_metadata.role : null
+  });
+
+  return {
+    id: user.id,
+    name: fullName,
+    role,
+    email: user.email ?? "",
+    avatar: getAvatarLabel(fullName, user.email),
+    avatarUrl,
+    authSource: "supabase"
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = useState<StoredAuthUser[]>(seedUsers);
   const [user, setUser] = useState<User | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const isCloudAuthEnabled = isSupabaseConfigured();
 
   useEffect(() => {
+    if (isCloudAuthEnabled) {
+      const supabase = getSupabaseBrowserClient();
+
+      if (!supabase) {
+        setHydrated(true);
+        return;
+      }
+
+      let mounted = true;
+      const syncSession = async () => {
+        try {
+          const sessionResult = await supabase.auth.getSession();
+          if (!mounted) return;
+          setUser(sessionResult.data.session?.user ? mapSupabaseUser(sessionResult.data.session.user) : null);
+          setHydrated(true);
+        } catch {
+          if (!mounted) return;
+          setHydrated(true);
+        }
+      };
+
+      void syncSession();
+
+      const {
+        data: { subscription }
+      } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+        if (!mounted) return;
+        setUser(session?.user ? mapSupabaseUser(session.user) : null);
+      });
+
+      return () => {
+        mounted = false;
+        subscription.unsubscribe();
+      };
+    }
+
     try {
       const savedUsers = window.localStorage.getItem(USERS_STORAGE_KEY);
       const savedSession = window.localStorage.getItem(SESSION_STORAGE_KEY);
@@ -101,22 +161,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setHydrated(true);
     }
-  }, []);
+  }, [isCloudAuthEnabled]);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || isCloudAuthEnabled) return;
     window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-  }, [hydrated, users]);
+  }, [hydrated, isCloudAuthEnabled, users]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
       hydrated,
-      login: ({ email, password }) => {
+      isCloudAuthEnabled,
+      login: async ({ email, password }) => {
+        if (isCloudAuthEnabled) {
+          return { ok: false, message: "Usa el acceso con Google para esta instalacion." };
+        }
+
         const foundUser = users.find((item) => item.email.toLowerCase() === email.trim().toLowerCase());
 
         if (!foundUser || foundUser.password !== password) {
-          return { ok: false, message: "Correo o contraseña incorrectos." };
+          return { ok: false, message: "Correo o contrasena incorrectos." };
         }
 
         const publicUser = toPublicUser(foundUser);
@@ -124,7 +189,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         window.localStorage.setItem(SESSION_STORAGE_KEY, foundUser.id);
         return { ok: true };
       },
-      register: ({ name, email, password, role, company }) => {
+      loginWithGoogle: async (nextPath = "/app/dashboard") => {
+        const supabase = getSupabaseBrowserClient();
+
+        if (!isCloudAuthEnabled || !supabase) {
+          return { ok: false, message: "Google Login requiere configurar Supabase Auth." };
+        }
+
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: getAuthCallbackUrl(nextPath),
+            queryParams: {
+              access_type: "offline",
+              prompt: "select_account"
+            }
+          }
+        });
+
+        if (error) {
+          return { ok: false, message: error.message };
+        }
+
+        return { ok: true };
+      },
+      register: async ({ name, email, password, role, company }) => {
+        if (isCloudAuthEnabled) {
+          return { ok: false, message: "El alta manual queda desactivada cuando usas autenticacion cloud." };
+        }
+
         const normalizedEmail = email.trim().toLowerCase();
 
         if (users.some((item) => item.email.toLowerCase() === normalizedEmail)) {
@@ -136,9 +229,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: name.trim(),
           email: normalizedEmail,
           role,
-          avatar: createAvatar(name),
+          avatar: getAvatarLabel(name, email),
           company: company?.trim(),
-          password
+          password,
+          authSource: "local"
         };
 
         setUsers((current) => [...current, createdUser]);
@@ -146,12 +240,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         window.localStorage.setItem(SESSION_STORAGE_KEY, createdUser.id);
         return { ok: true };
       },
-      logout: () => {
+      logout: async () => {
+        if (isCloudAuthEnabled) {
+          const supabase = getSupabaseBrowserClient();
+          await supabase?.auth.signOut();
+          setUser(null);
+          return;
+        }
+
         setUser(null);
         window.localStorage.removeItem(SESSION_STORAGE_KEY);
       }
     }),
-    [hydrated, user, users]
+    [hydrated, isCloudAuthEnabled, user, users]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

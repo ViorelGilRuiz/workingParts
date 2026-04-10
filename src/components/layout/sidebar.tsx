@@ -10,13 +10,14 @@ import { IBERSOFT_BRAND } from "@/lib/exports";
 import { cn } from "@/lib/utils";
 import { useAppTheme } from "@/components/providers/app-providers";
 import { useAuth } from "@/components/providers/auth-provider";
+import { UserAvatar } from "@/components/shared/user-avatar";
 import { Button } from "@/components/ui/button";
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggleTheme } = useAppTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, isCloudAuthEnabled } = useAuth();
 
   useEffect(() => {
     const prefetchTargets = navigation.map((item) => item.href).filter((href) => href !== pathname).slice(0, 5);
@@ -65,6 +66,10 @@ export function Sidebar() {
             <p className="mt-2 text-sm text-muted-foreground">
               Menu grande, limpio y preparado para tickets, clientes, facturas y supervision.
             </p>
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              {isCloudAuthEnabled ? "Cloud auth" : "Modo local"}
+            </div>
           </div>
           <div className="rounded-2xl bg-primary/10 p-2 text-primary">
             <Sparkles className="h-4 w-4" />
@@ -124,9 +129,12 @@ export function Sidebar() {
 
       <div className="mt-6 rounded-[30px] border border-border/60 bg-background/55 p-4 lg:mt-auto">
         <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-sm font-bold text-primary">
-            {user?.avatar ?? "IB"}
-          </div>
+          <UserAvatar
+            name={user?.name}
+            avatar={user?.avatar}
+            avatarUrl={user?.avatarUrl}
+            className="h-12 w-12"
+          />
           <div className="min-w-0">
             <p className="truncate font-semibold">{user?.name ?? "Invitado"}</p>
             <p className="truncate text-sm capitalize text-muted-foreground">{user?.role ?? "Sin sesion"}</p>

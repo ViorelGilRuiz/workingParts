@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { Sidebar } from "@/components/layout/sidebar";
 
 export function AppShell({
@@ -17,8 +18,15 @@ export function AppShell({
           <Sidebar />
         </div>
 
-        <main key={pathname} className="space-y-6 pb-8">
-          {children}
+        <main className="space-y-6 pb-8">
+          <motion.div
+            key={pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+          >
+            {children}
+          </motion.div>
         </main>
       </div>
     </div>

@@ -3,11 +3,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { clients as seedClients, reports as seedReports, teamMembers } from "@/data/demo";
 import { useAuth } from "@/components/providers/auth-provider";
+import { createWorkingPartsRepository } from "@/lib/data";
 import { getReportAnalytics } from "@/lib/report-analytics";
 import { Client, WorkReport } from "@/types";
-
-const REPORTS_STORAGE_KEY = "portal-incidencias-reports";
-const CLIENTS_STORAGE_KEY = "portal-incidencias-clients";
 
 interface CreateClientInput {
   name: string;
@@ -41,6 +39,7 @@ interface ReportsContextValue {
   reports: WorkReport[];
   clients: Client[];
   hydrated: boolean;
+  storageStrategy: "local-browser" | "supabase";
   analytics: ReturnType<typeof getReportAnalytics>;
   createClient: (input: CreateClientInput) => Client;
   createReport: (input: CreateReportInput) => WorkReport;
@@ -109,42 +108,34 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
   const [reports, setReports] = useState<WorkReport[]>(seedReports);
   const [clients, setClients] = useState<Client[]>(seedClients);
   const [hydrated, setHydrated] = useState(false);
+  const repository = useMemo(() => createWorkingPartsRepository(), []);
 
   useEffect(() => {
-    try {
-      const savedReports = window.localStorage.getItem(REPORTS_STORAGE_KEY);
-      const savedClients = window.localStorage.getItem(CLIENTS_STORAGE_KEY);
-
-      if (savedReports) {
-        const parsedReports = (JSON.parse(savedReports) as WorkReport[]).map(normalizeReport);
-        if (Array.isArray(parsedReports)) {
-          setReports(parsedReports);
-        }
+    const syncRepositoryState = async () => {
+      try {
+        const [storedReports, storedClients] = await Promise.all([repository.loadReports(), repository.loadClients()]);
+        setReports(storedReports.map(normalizeReport));
+        setClients(storedClients.map(normalizeClient));
+      } catch {
+        setReports(seedReports.map(normalizeReport));
+        setClients(seedClients.map(normalizeClient));
+      } finally {
+        setHydrated(true);
       }
+    };
 
-      if (savedClients) {
-        const parsedClients = (JSON.parse(savedClients) as Client[]).map(normalizeClient);
-        if (Array.isArray(parsedClients)) {
-          setClients(parsedClients);
-        }
-      }
-    } catch {
-      setReports(seedReports.map(normalizeReport));
-      setClients(seedClients.map(normalizeClient));
-    } finally {
-      setHydrated(true);
-    }
-  }, []);
+    void syncRepositoryState();
+  }, [repository]);
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(REPORTS_STORAGE_KEY, JSON.stringify(reports));
-  }, [hydrated, reports]);
+    void repository.saveReports(reports);
+  }, [hydrated, reports, repository]);
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(CLIENTS_STORAGE_KEY, JSON.stringify(clients));
-  }, [clients, hydrated]);
+    void repository.saveClients(clients);
+  }, [clients, hydrated, repository]);
 
   const createClient = useCallback((input: CreateClientInput) => {
     const normalizedName = input.name.trim().toLowerCase();
@@ -183,6 +174,7 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
       reports,
       clients,
       hydrated,
+      storageStrategy: repository.strategy,
       analytics: getReportAnalytics(reports),
       createClient,
       createReport: (input) => {
@@ -235,7 +227,7 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
       updateReport,
       deleteReport
     }),
-    [clients, createClient, deleteReport, hydrated, reports, updateReport, user]
+    [clients, createClient, deleteReport, hydrated, reports, repository.strategy, updateReport, user]
   );
 
   return <ReportsContext.Provider value={value}>{children}</ReportsContext.Provider>;

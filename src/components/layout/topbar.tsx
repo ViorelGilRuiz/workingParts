@@ -22,7 +22,7 @@ const quickFilterMap: Record<string, string> = {
 export function Topbar({ title, subtitle }: { title: string; subtitle: string }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isCloudAuthEnabled } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [showPresetFilters, setShowPresetFilters] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
@@ -69,6 +69,9 @@ export function Topbar({ title, subtitle }: { title: string; subtitle: string })
           <div className="rounded-2xl border border-border/70 bg-background/55 px-4 py-2 text-right">
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Sesion</p>
             <p className="text-sm font-semibold">{user?.name ?? "Sin usuario"}</p>
+            <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              {isCloudAuthEnabled ? "Cloud auth" : "Local mode"}
+            </p>
           </div>
           <Button variant="subtle" type="button" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />

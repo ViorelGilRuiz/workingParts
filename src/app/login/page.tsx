@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { appEnv } from "@/lib/env";
 import { IBERSOFT_BRAND } from "@/lib/exports";
 import { loginTechIcons } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -34,26 +35,38 @@ const roleLabels = {
 } as const;
 
 const quickStats = [
-  { label: "Cloud", value: "24 nodos" },
-  { label: "Tickets", value: "07 vivos" },
+  { label: "Cloud", value: "Google OAuth" },
+  { label: "Tickets", value: "Multiusuario" },
   { label: "Tarifa", value: "50 EUR/h" }
 ];
 
 const quickPoints = [
-  "Operacion cloud, sistemas y soporte premium",
-  "Sesion local persistente lista para crecer",
-  "Facturacion y conformidad preparadas para cliente"
+  "Sesion segura lista para internet y Netlify",
+  "Acceso corporativo con Google y roles basicos",
+  "Base preparada para escalar a Supabase y Postgres"
 ];
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+      <path fill="#EA4335" d="M12 10.2v3.9h5.4c-.2 1.2-.9 2.3-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.4 0-.7-.1-1.3-.2-2H12Z" />
+      <path fill="#4285F4" d="M12 21.5c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 .9-3.4.9-2.6 0-4.8-1.7-5.6-4.1H3.1V16c1.6 3.2 4.9 5.5 8.9 5.5Z" />
+      <path fill="#FBBC05" d="M6.4 13.4c-.2-.6-.4-1.2-.4-1.9s.1-1.3.4-1.9V7.1H3.1C2.4 8.4 2 9.9 2 11.5s.4 3.1 1.1 4.4l3.3-2.5Z" />
+      <path fill="#34A853" d="M12 5.5c1.5 0 2.8.5 3.9 1.5l2.9-2.9C17 2.6 14.7 1.5 12 1.5c-4 0-7.3 2.3-8.9 5.6l3.3 2.5c.8-2.4 3-4.1 5.6-4.1Z" />
+    </svg>
+  );
+}
 
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, hydrated, login, register } = useAuth();
+  const { user, hydrated, login, loginWithGoogle, register, isCloudAuthEnabled } = useAuth();
   const nextPath = searchParams.get("next") || "/app/dashboard";
 
   const [mode, setMode] = useState<AuthMode>("login");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [loginForm, setLoginForm] = useState({
     email: "carlos.martin@ibersoft.es",
     password: "demo1234"
@@ -89,11 +102,11 @@ function LoginPageContent() {
 
   const heroBars = useMemo(
     () => [
-      { label: "Azure / M365", value: "Estable", width: "86%" },
-      { label: "Backups gestionados", value: "8/9", width: "72%" },
-      { label: "Acceso remoto", value: "Alto", width: "91%" }
+      { label: "Google identity", value: isCloudAuthEnabled ? "Lista" : "Pendiente", width: isCloudAuthEnabled ? "92%" : "34%" },
+      { label: "Persistencia", value: isCloudAuthEnabled ? "SSR cookie" : "Local mode", width: isCloudAuthEnabled ? "88%" : "58%" },
+      { label: "Escalabilidad", value: "Supabase ready", width: "90%" }
     ],
-    []
+    [isCloudAuthEnabled]
   );
 
   const fallingIcons = useMemo(
@@ -113,14 +126,16 @@ function LoginPageContent() {
     []
   );
 
-  const submitLogin = (event: React.FormEvent<HTMLFormElement>) => {
+  const runLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitting(true);
     setError("");
     setMessage("");
 
-    const result = login(loginForm);
+    const result = await login(loginForm);
     if (!result.ok) {
       setError(result.message);
+      setSubmitting(false);
       return;
     }
 
@@ -130,22 +145,25 @@ function LoginPageContent() {
     });
   };
 
-  const submitRegister = (event: React.FormEvent<HTMLFormElement>) => {
+  const runRegister = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitting(true);
     setError("");
     setMessage("");
 
     if (registerForm.password.length < 6) {
       setError("La contrasena debe tener al menos 6 caracteres.");
+      setSubmitting(false);
       return;
     }
 
     if (registerForm.password !== registerForm.confirmPassword) {
       setError("Las contrasenas no coinciden.");
+      setSubmitting(false);
       return;
     }
 
-    const result = register({
+    const result = await register({
       name: registerForm.name,
       email: registerForm.email,
       password: registerForm.password,
@@ -155,6 +173,7 @@ function LoginPageContent() {
 
     if (!result.ok) {
       setError(result.message);
+      setSubmitting(false);
       return;
     }
 
@@ -162,6 +181,21 @@ function LoginPageContent() {
     startTransition(() => {
       router.push(nextPath);
     });
+  };
+
+  const handleGoogleLogin = async () => {
+    setSubmitting(true);
+    setError("");
+    setMessage("");
+
+    const result = await loginWithGoogle(nextPath);
+    if (!result.ok) {
+      setError(result.message);
+      setSubmitting(false);
+      return;
+    }
+
+    setMessage("Redirigiendo a Google para continuar con el acceso seguro...");
   };
 
   if (!hydrated) {
@@ -218,7 +252,7 @@ function LoginPageContent() {
                 className="inline-flex items-center gap-2 rounded-full border border-sky-300/15 bg-white/5 px-4 py-2 text-sm font-semibold text-sky-200"
               >
                 <RadioTower className="h-4 w-4" />
-                {IBERSOFT_BRAND.name} · cloud, sistemas, soporte y facturacion
+                {IBERSOFT_BRAND.name} · soporte, cloud, tickets y facturacion
               </motion.div>
 
               <div className="max-w-4xl space-y-5">
@@ -228,7 +262,7 @@ function LoginPageContent() {
                   transition={{ delay: 0.14, duration: 0.46 }}
                   className="text-5xl font-extrabold tracking-[-0.05em] text-white lg:text-7xl"
                 >
-                  Un acceso con atmosfera IT premium y lenguaje visual de sistemas cloud.
+                  Acceso premium para un producto serio de servicio tecnico.
                 </motion.h1>
                 <motion.p
                   initial={{ opacity: 0, y: 18 }}
@@ -236,8 +270,8 @@ function LoginPageContent() {
                   transition={{ delay: 0.2, duration: 0.48 }}
                   className="max-w-2xl text-lg leading-8 text-slate-300"
                 >
-                  Iconos tecnicos en movimiento, telemetria elegante y una entrada preparada para soporte, mantenimiento,
-                  cloud y control ejecutivo.
+                  Login con atmosfera IT, iconografia cloud en movimiento y una base real para autenticacion segura,
+                  roles y despliegue en internet.
                 </motion.p>
               </div>
 
@@ -251,10 +285,10 @@ function LoginPageContent() {
                   <div className="mb-5 flex items-center justify-between">
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.28em] text-sky-200/70">Live operations</p>
-                      <h2 className="mt-2 text-xl font-bold">Operacion Ibersoft</h2>
+                      <h2 className="mt-2 text-xl font-bold">Acceso y telemetria</h2>
                     </div>
                     <div className="rounded-2xl border border-emerald-400/15 bg-emerald-400/10 px-3 py-2 text-xs font-semibold text-emerald-300">
-                      Online
+                      {isCloudAuthEnabled ? "Google ready" : "Modo local"}
                     </div>
                   </div>
 
@@ -273,8 +307,8 @@ function LoginPageContent() {
                         <Activity className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-white">Actividad de infraestructura</p>
-                        <p className="text-xs text-slate-400">Cloud, backup, accesos remotos y estado de servicio</p>
+                        <p className="text-sm font-semibold text-white">Preparacion para produccion</p>
+                        <p className="text-xs text-slate-400">Google OAuth, SSR cookies, roles y Netlify</p>
                       </div>
                     </div>
 
@@ -317,35 +351,22 @@ function LoginPageContent() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold">Acceso seguro</p>
-                        <p className="text-xs text-slate-400">Identidad corporativa ligera y elegante</p>
+                        <p className="text-xs text-slate-400">Diseñado para internet y sesiones persistentes</p>
                       </div>
                     </div>
                   </Card>
 
                   <Card className="border-white/8 bg-white/5 text-white">
-                    <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Cuenta demo</p>
+                    <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Recomendado</p>
                     <div className="mt-4 space-y-3">
                       <div>
-                        <p className="text-xs text-slate-400">Correo</p>
-                        <p className="font-semibold">carlos.martin@ibersoft.es</p>
+                        <p className="text-xs text-slate-400">Proveedor</p>
+                        <p className="font-semibold">Google Workspace / Google OAuth</p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-400">Contrasena</p>
-                        <p className="font-semibold">demo1234</p>
+                        <p className="text-xs text-slate-400">Redirect</p>
+                        <p className="font-semibold break-all">{appEnv.siteUrl}/auth/callback</p>
                       </div>
-                      <Button
-                        className="w-full bg-white text-slate-950 hover:bg-sky-50"
-                        type="button"
-                        onClick={() => {
-                          setMode("login");
-                          setLoginForm({ email: "carlos.martin@ibersoft.es", password: "demo1234" });
-                          setError("");
-                          setMessage("Credenciales demo cargadas.");
-                        }}
-                      >
-                        Usar acceso demo
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
                     </div>
                   </Card>
 
@@ -373,7 +394,7 @@ function LoginPageContent() {
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-400/10 text-sky-300">
                 <ShieldCheck className="h-5 w-5" />
               </div>
-              <p>Minimalismo premium con iconografia IT, soporte cloud y lectura inmediata de operacion.</p>
+              <p>Minimalismo premium con sesiones serias, login Google y base escalable para SaaS multiusuario.</p>
             </motion.div>
           </div>
         </motion.section>
@@ -394,45 +415,207 @@ function LoginPageContent() {
               </div>
               <h2 className="text-3xl font-extrabold tracking-tight lg:text-4xl">Entra al portal</h2>
               <p className="text-sm leading-6 text-muted-foreground">
-                Pantalla de acceso optimizada para sentirse rapida, clara y profesional desde el primer clic.
+                Google es la via principal para produccion. El modo local se mantiene solo como fallback de desarrollo.
               </p>
             </div>
 
-            <div className="relative grid grid-cols-2 rounded-[24px] border border-border/70 bg-muted/50 p-1.5">
-              <motion.div
-                animate={{ x: mode === "login" ? "0%" : "100%" }}
-                transition={{ type: "spring", stiffness: 340, damping: 28 }}
-                className="absolute left-1.5 top-1.5 h-[calc(100%-12px)] w-[calc(50%-6px)] rounded-[18px] bg-card shadow-soft"
-              />
-              <button
+            <Card className="space-y-4 border-border/60 bg-background/60">
+              <Button
                 type="button"
-                onClick={() => {
-                  setMode("login");
-                  setError("");
-                  setMessage("");
-                }}
-                className={cn(
-                  "relative z-10 rounded-[18px] px-4 py-3 text-sm font-semibold transition",
-                  mode === "login" ? "text-foreground" : "text-muted-foreground"
-                )}
+                className="h-12 w-full rounded-2xl bg-foreground text-background hover:bg-foreground/92"
+                onClick={handleGoogleLogin}
+                disabled={submitting || !isCloudAuthEnabled}
               >
-                Iniciar sesion
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("register");
-                  setError("");
-                  setMessage("");
-                }}
-                className={cn(
-                  "relative z-10 rounded-[18px] px-4 py-3 text-sm font-semibold transition",
-                  mode === "register" ? "text-foreground" : "text-muted-foreground"
-                )}
-              >
-                Crear cuenta
-              </button>
-            </div>
+                <GoogleIcon />
+                <span className="ml-2">Continuar con Google</span>
+              </Button>
+
+              <div className="rounded-2xl border border-border/60 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                {isCloudAuthEnabled
+                  ? "Google Login activo. La sesion se gestionara de forma segura con Supabase Auth y cookies SSR."
+                  : "Google Login preparado. Solo falta configurar NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY."}
+              </div>
+            </Card>
+
+            {!isCloudAuthEnabled ? (
+              <>
+                <div className="relative grid grid-cols-2 rounded-[24px] border border-border/70 bg-muted/50 p-1.5">
+                  <motion.div
+                    animate={{ x: mode === "login" ? "0%" : "100%" }}
+                    transition={{ type: "spring", stiffness: 340, damping: 28 }}
+                    className="absolute left-1.5 top-1.5 h-[calc(100%-12px)] w-[calc(50%-6px)] rounded-[18px] bg-card shadow-soft"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("login");
+                      setError("");
+                      setMessage("");
+                    }}
+                    className={cn(
+                      "relative z-10 rounded-[18px] px-4 py-3 text-sm font-semibold transition",
+                      mode === "login" ? "text-foreground" : "text-muted-foreground"
+                    )}
+                  >
+                    Iniciar sesion
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("register");
+                      setError("");
+                      setMessage("");
+                    }}
+                    className={cn(
+                      "relative z-10 rounded-[18px] px-4 py-3 text-sm font-semibold transition",
+                      mode === "register" ? "text-foreground" : "text-muted-foreground"
+                    )}
+                  >
+                    Crear cuenta
+                  </button>
+                </div>
+
+                <motion.div
+                  key={mode}
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.28, ease: "easeOut" }}
+                >
+                  {mode === "login" ? (
+                    <form className="space-y-4" onSubmit={runLogin}>
+                      <Card className="space-y-5 border-border/60 bg-background/60">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Correo corporativo</label>
+                          <div className="relative">
+                            <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              type="email"
+                              value={loginForm.email}
+                              onChange={(event) => setLoginForm((current) => ({ ...current, email: event.target.value }))}
+                              placeholder="tecnico@ibersoft.es"
+                              className="h-12 rounded-2xl bg-background/80 pl-11"
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Contrasena</label>
+                          <div className="relative">
+                            <LockKeyhole className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              type="password"
+                              value={loginForm.password}
+                              onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
+                              placeholder="Introduce tu contrasena"
+                              className="h-12 rounded-2xl bg-background/80 pl-11"
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        <Button className="h-12 w-full rounded-2xl text-base" disabled={submitting}>
+                          <LockKeyhole className="mr-2 h-4 w-4" />
+                          Acceder al portal
+                        </Button>
+                      </Card>
+                    </form>
+                  ) : (
+                    <form className="space-y-4" onSubmit={runRegister}>
+                      <Card className="space-y-5 border-border/60 bg-background/60">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="space-y-2 sm:col-span-2">
+                            <label className="text-sm font-medium">Nombre completo</label>
+                            <div className="relative">
+                              <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <Input
+                                value={registerForm.name}
+                                onChange={(event) => setRegisterForm((current) => ({ ...current, name: event.target.value }))}
+                                placeholder="Lucia Gomez"
+                                required
+                                className="h-12 rounded-2xl bg-background/80 pl-11"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 sm:col-span-2">
+                            <label className="text-sm font-medium">Correo</label>
+                            <div className="relative">
+                              <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <Input
+                                type="email"
+                                value={registerForm.email}
+                                onChange={(event) => setRegisterForm((current) => ({ ...current, email: event.target.value }))}
+                                placeholder="lucia@ibersoft.es"
+                                required
+                                className="h-12 rounded-2xl bg-background/80 pl-11"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Empresa</label>
+                            <Input
+                              value={registerForm.company}
+                              onChange={(event) => setRegisterForm((current) => ({ ...current, company: event.target.value }))}
+                              placeholder={IBERSOFT_BRAND.name}
+                              className="h-12 rounded-2xl bg-background/80"
+                              required
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Perfil</label>
+                            <Select
+                              value={registerForm.role}
+                              onChange={(event) => setRegisterForm((current) => ({ ...current, role: event.target.value }))}
+                              className="h-12 rounded-2xl bg-background/80"
+                            >
+                              {Object.entries(roleLabels).map(([value, label]) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Contrasena</label>
+                            <Input
+                              type="password"
+                              value={registerForm.password}
+                              onChange={(event) => setRegisterForm((current) => ({ ...current, password: event.target.value }))}
+                              placeholder="Minimo 6 caracteres"
+                              required
+                              className="h-12 rounded-2xl bg-background/80"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Confirmar contrasena</label>
+                            <Input
+                              type="password"
+                              value={registerForm.confirmPassword}
+                              onChange={(event) =>
+                                setRegisterForm((current) => ({ ...current, confirmPassword: event.target.value }))
+                              }
+                              placeholder="Repite la contrasena"
+                              required
+                              className="h-12 rounded-2xl bg-background/80"
+                            />
+                          </div>
+                        </div>
+
+                        <Button className="h-12 w-full rounded-2xl text-base" disabled={submitting}>
+                          <UserPlus2 className="mr-2 h-4 w-4" />
+                          Crear cuenta y entrar
+                        </Button>
+                      </Card>
+                    </form>
+                  )}
+                </motion.div>
+              </>
+            ) : null}
 
             {message ? (
               <motion.div
@@ -453,143 +636,6 @@ function LoginPageContent() {
                 {error}
               </motion.div>
             ) : null}
-
-            <motion.div key={mode} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: "easeOut" }}>
-              {mode === "login" ? (
-                <form className="space-y-4" onSubmit={submitLogin}>
-                  <Card className="space-y-5 border-border/60 bg-background/60">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Correo corporativo</label>
-                      <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          type="email"
-                          value={loginForm.email}
-                          onChange={(event) => setLoginForm((current) => ({ ...current, email: event.target.value }))}
-                          placeholder="tecnico@ibersoft.es"
-                          className="h-12 rounded-2xl bg-background/80 pl-11"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Contrasena</label>
-                      <div className="relative">
-                        <LockKeyhole className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          type="password"
-                          value={loginForm.password}
-                          onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
-                          placeholder="Introduce tu contrasena"
-                          className="h-12 rounded-2xl bg-background/80 pl-11"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-border/60 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-                      Acceso pensado para tecnico, supervisor, administracion y crecimiento hacia un portal completo de empresa.
-                    </div>
-
-                    <Button className="h-12 w-full rounded-2xl text-base">
-                      <LockKeyhole className="mr-2 h-4 w-4" />
-                      Acceder al portal
-                    </Button>
-                  </Card>
-                </form>
-              ) : (
-                <form className="space-y-4" onSubmit={submitRegister}>
-                  <Card className="space-y-5 border-border/60 bg-background/60">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="space-y-2 sm:col-span-2">
-                        <label className="text-sm font-medium">Nombre completo</label>
-                        <div className="relative">
-                          <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <Input
-                            value={registerForm.name}
-                            onChange={(event) => setRegisterForm((current) => ({ ...current, name: event.target.value }))}
-                            placeholder="Lucia Gomez"
-                            required
-                            className="h-12 rounded-2xl bg-background/80 pl-11"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 sm:col-span-2">
-                        <label className="text-sm font-medium">Correo</label>
-                        <div className="relative">
-                          <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <Input
-                            type="email"
-                            value={registerForm.email}
-                            onChange={(event) => setRegisterForm((current) => ({ ...current, email: event.target.value }))}
-                            placeholder="lucia@ibersoft.es"
-                            required
-                            className="h-12 rounded-2xl bg-background/80 pl-11"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Empresa</label>
-                        <Input
-                          value={registerForm.company}
-                          onChange={(event) => setRegisterForm((current) => ({ ...current, company: event.target.value }))}
-                          placeholder={IBERSOFT_BRAND.name}
-                          className="h-12 rounded-2xl bg-background/80"
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Perfil</label>
-                        <Select
-                          value={registerForm.role}
-                          onChange={(event) => setRegisterForm((current) => ({ ...current, role: event.target.value }))}
-                          className="h-12 rounded-2xl bg-background/80"
-                        >
-                          {Object.entries(roleLabels).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Contrasena</label>
-                        <Input
-                          type="password"
-                          value={registerForm.password}
-                          onChange={(event) => setRegisterForm((current) => ({ ...current, password: event.target.value }))}
-                          placeholder="Minimo 6 caracteres"
-                          required
-                          className="h-12 rounded-2xl bg-background/80"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Confirmar contrasena</label>
-                        <Input
-                          type="password"
-                          value={registerForm.confirmPassword}
-                          onChange={(event) => setRegisterForm((current) => ({ ...current, confirmPassword: event.target.value }))}
-                          placeholder="Repite la contrasena"
-                          required
-                          className="h-12 rounded-2xl bg-background/80"
-                        />
-                      </div>
-                    </div>
-
-                    <Button className="h-12 w-full rounded-2xl text-base">
-                      <UserPlus2 className="mr-2 h-4 w-4" />
-                      Crear cuenta y entrar
-                    </Button>
-                  </Card>
-                </form>
-              )}
-            </motion.div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
               <Link href="/" className="font-semibold text-primary">

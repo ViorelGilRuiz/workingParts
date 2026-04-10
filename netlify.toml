@@ -5,3 +5,7 @@
 [build.environment]
   NODE_VERSION = "20"
   NEXT_TELEMETRY_DISABLED = "1"
+  NPM_FLAGS = "--no-fund"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
