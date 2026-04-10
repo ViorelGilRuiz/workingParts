@@ -19,6 +19,8 @@ export function ReportTable() {
   const [priority, setPriority] = useState("Todas");
   const [category, setCategory] = useState("Todas");
   const [sortBy, setSortBy] = useState<"recent" | "duration" | "client">("recent");
+  const [compactView, setCompactView] = useState(false);
+  const [showExtraColumns, setShowExtraColumns] = useState(true);
 
   const filtered = useMemo(() => {
     const result = reports.filter((report) => {
@@ -46,11 +48,9 @@ export function ReportTable() {
     });
   }, [category, priority, query, reports, sortBy, status]);
 
-  const totalHours = useMemo(
-    () => filtered.reduce((sum, report) => sum + report.durationHours, 0).toFixed(1),
-    [filtered]
-  );
+  const totalHours = useMemo(() => filtered.reduce((sum, report) => sum + report.durationHours, 0).toFixed(1), [filtered]);
   const categories = useMemo(() => ["Todas", ...Array.from(new Set(reports.map((report) => report.category)))], [reports]);
+  const rowPaddingClass = compactView ? "py-2" : "py-4";
 
   return (
     <Card className="overflow-hidden p-0">
@@ -88,17 +88,17 @@ export function ReportTable() {
             ))}
           </Select>
           <Select className="w-full lg:w-44" value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)}>
-            <option value="recent">Más recientes</option>
-            <option value="duration">Mayor duración</option>
+            <option value="recent">Mas recientes</option>
+            <option value="duration">Mayor duracion</option>
             <option value="client">Cliente A-Z</option>
           </Select>
-          <Button variant="outline">
+          <Button type="button" variant="outline" onClick={() => setCompactView((value) => !value)}>
             <ArrowUpDown className="mr-2 h-4 w-4" />
-            Vista
+            {compactView ? "Amplia" : "Compacta"}
           </Button>
-          <Button variant="outline">
+          <Button type="button" variant="outline" onClick={() => setShowExtraColumns((value) => !value)}>
             <GripHorizontal className="mr-2 h-4 w-4" />
-            Columnas
+            {showExtraColumns ? "Menos columnas" : "Mas columnas"}
           </Button>
         </div>
       </div>
@@ -150,51 +150,58 @@ export function ReportTable() {
         <table className="min-w-full text-sm">
           <thead className="bg-muted/50 text-left text-muted-foreground">
             <tr>
-              {["Parte", "Fecha", "Técnico", "Cliente", "Categoría", "Duración", "Prioridad", "Estado", "Adjuntos", ""].map(
-                (heading) => (
-                  <th key={heading} className="px-4 py-3 font-medium">
-                    {heading}
-                  </th>
-                )
-              )}
+              <th className="px-4 py-3 font-medium">Parte</th>
+              <th className="px-4 py-3 font-medium">Fecha</th>
+              {showExtraColumns ? <th className="px-4 py-3 font-medium">Tecnico</th> : null}
+              <th className="px-4 py-3 font-medium">Cliente</th>
+              <th className="px-4 py-3 font-medium">Categoria</th>
+              <th className="px-4 py-3 font-medium">Duracion</th>
+              {showExtraColumns ? <th className="px-4 py-3 font-medium">Prioridad</th> : null}
+              <th className="px-4 py-3 font-medium">Estado</th>
+              {showExtraColumns ? <th className="px-4 py-3 font-medium">Adjuntos</th> : null}
+              <th className="px-4 py-3 font-medium" />
             </tr>
           </thead>
           <tbody>
             {filtered.length > 0 ? (
               filtered.map((report) => (
                 <tr key={report.id} className="border-t border-border/60 transition hover:bg-muted/25">
-                  <td className="px-4 py-4 font-semibold">{report.id}</td>
-                  <td className="px-4 py-4">{formatDate(report.date)}</td>
-                  <td className="px-4 py-4">{report.technician}</td>
-                  <td className="px-4 py-4">
+                  <td className={`px-4 font-semibold ${rowPaddingClass}`}>{report.id}</td>
+                  <td className={`px-4 ${rowPaddingClass}`}>{formatDate(report.date)}</td>
+                  {showExtraColumns ? <td className={`px-4 ${rowPaddingClass}`}>{report.technician}</td> : null}
+                  <td className={`px-4 ${rowPaddingClass}`}>
                     <div className="font-medium">{report.client}</div>
-                    <div className="text-xs text-muted-foreground">{report.contact}</div>
+                    {showExtraColumns ? <div className="text-xs text-muted-foreground">{report.contact}</div> : null}
                   </td>
-                  <td className="px-4 py-4">{report.category}</td>
-                  <td className="px-4 py-4">{report.durationHours} h</td>
-                  <td className="px-4 py-4">
-                    <Badge
-                      className={cn(
-                        report.priority === "Alta"
-                          ? "bg-rose-500/10 text-rose-600 dark:text-rose-300"
-                          : report.priority === "Media"
-                            ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                            : "bg-slate-500/10 text-slate-700 dark:text-slate-300"
-                      )}
-                    >
-                      {report.priority}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-4">
+                  <td className={`px-4 ${rowPaddingClass}`}>{report.category}</td>
+                  <td className={`px-4 ${rowPaddingClass}`}>{report.durationHours} h</td>
+                  {showExtraColumns ? (
+                    <td className={`px-4 ${rowPaddingClass}`}>
+                      <Badge
+                        className={cn(
+                          report.priority === "Alta"
+                            ? "bg-rose-500/10 text-rose-600 dark:text-rose-300"
+                            : report.priority === "Media"
+                              ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                              : "bg-slate-500/10 text-slate-700 dark:text-slate-300"
+                        )}
+                      >
+                        {report.priority}
+                      </Badge>
+                    </td>
+                  ) : null}
+                  <td className={`px-4 ${rowPaddingClass}`}>
                     <Badge className={statusStyles[report.status]}>{report.status}</Badge>
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="inline-flex items-center gap-2">
-                      <Paperclip className="h-4 w-4" />
-                      {report.attachments}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
+                  {showExtraColumns ? (
+                    <td className={`px-4 ${rowPaddingClass}`}>
+                      <div className="inline-flex items-center gap-2">
+                        <Paperclip className="h-4 w-4" />
+                        {report.attachments}
+                      </div>
+                    </td>
+                  ) : null}
+                  <td className={`px-4 ${rowPaddingClass}`}>
                     <Button variant="ghost" size="sm" asChild>
                       <Link href={`/app/partes/${report.id}`}>
                         <Eye className="mr-2 h-4 w-4" />
@@ -206,7 +213,7 @@ export function ReportTable() {
               ))
             ) : (
               <tr className="border-t border-border/60">
-                <td colSpan={10} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                <td colSpan={showExtraColumns ? 10 : 7} className="px-4 py-10 text-center text-sm text-muted-foreground">
                   No hay partes que coincidan con los filtros actuales.
                 </td>
               </tr>

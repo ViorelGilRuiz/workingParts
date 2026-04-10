@@ -1,50 +1,40 @@
 "use client";
 
-import { startTransition, useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Download, Search, SlidersHorizontal, Sparkles, X } from "lucide-react";
-import { quickFilters } from "@/data/demo";
+import { quickFilters } from "@/lib/constants";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Notification, Notifications } from "@/components/shared/notifications";
 
-const initialNotifications: Notification[] = [
-  {
-    id: "1",
-    type: "info",
-    title: "Nuevo parte registrado",
-    message: "Se ha registrado un nuevo parte para el cliente ABC Corp.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 5)
-  },
-  {
-    id: "2",
-    type: "warning",
-    title: "Parte pendiente de revision",
-    message: "El parte #123 requiere atencion inmediata.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 30),
-    read: true
-  }
-];
+const initialNotifications: Notification[] = [];
+
+const quickFilterMap: Record<string, string> = {
+  Hoy: "hoy",
+  "Esta semana": "esta semana",
+  Pendientes: "pendiente",
+  Facturable: "factura",
+  Cliente: "cliente"
+};
 
 export function Topbar({ title, subtitle }: { title: string; subtitle: string }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showPresetFilters, setShowPresetFilters] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const deferredQuery = useDeferredValue(searchQuery);
 
   const quickSummary = useMemo(() => {
     if (!deferredQuery.trim()) {
-      return "Todo listo para trabajar";
+      return "Entorno limpio y listo para trabajar";
     }
 
     return `Filtro rapido: ${deferredQuery}`;
   }, [deferredQuery]);
-
-  const handleSearch = (query: string) => {
-    startTransition(() => {
-      setSearchQuery(query);
-    });
-  };
 
   const handleMarkAsRead = (id: string) => {
     setNotifications((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));
@@ -54,8 +44,17 @@ export function Topbar({ title, subtitle }: { title: string; subtitle: string })
     setNotifications((prev) => prev.filter((item) => item.id !== id));
   };
 
+  const handleExport = () => {
+    if (pathname === "/app/partes") {
+      window.dispatchEvent(new CustomEvent("portal:export-reports"));
+      return;
+    }
+
+    router.push("/app/partes");
+  };
+
   return (
-    <header className="sticky top-3 z-20 space-y-4 rounded-[28px] border border-border/70 bg-card/75 p-4 shadow-soft backdrop-blur lg:top-6 lg:p-5">
+    <header className="sticky top-3 z-20 space-y-4 rounded-[30px] border border-border/70 bg-card/78 p-4 shadow-soft backdrop-blur lg:top-6 lg:p-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">{subtitle}</p>
@@ -71,7 +70,7 @@ export function Topbar({ title, subtitle }: { title: string; subtitle: string })
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Sesion</p>
             <p className="text-sm font-semibold">{user?.name ?? "Sin usuario"}</p>
           </div>
-          <Button variant="subtle">
+          <Button variant="subtle" type="button" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>
@@ -86,12 +85,12 @@ export function Topbar({ title, subtitle }: { title: string; subtitle: string })
             className="h-12 rounded-2xl border-border/70 bg-background/75 pl-10 pr-10"
             placeholder="Buscar por cliente, incidencia, tecnico o etiqueta..."
             value={searchQuery}
-            onChange={(event) => handleSearch(event.target.value)}
+            onChange={(event) => setSearchQuery(event.target.value)}
           />
           {searchQuery ? (
             <button
               type="button"
-              onClick={() => handleSearch("")}
+              onClick={() => setSearchQuery("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
             >
               <X className="h-4 w-4" />
@@ -100,12 +99,20 @@ export function Topbar({ title, subtitle }: { title: string; subtitle: string })
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {quickFilters.map((filter) => (
-            <Button key={filter} variant="ghost" className="bg-background/55">
-              {filter}
-            </Button>
-          ))}
-          <Button variant="outline" size="icon">
+          {showPresetFilters
+            ? quickFilters.map((filter) => (
+                <Button
+                  key={filter}
+                  type="button"
+                  variant="ghost"
+                  className="bg-background/55"
+                  onClick={() => setSearchQuery(quickFilterMap[filter] ?? filter.toLowerCase())}
+                >
+                  {filter}
+                </Button>
+              ))
+            : null}
+          <Button variant="outline" size="icon" type="button" onClick={() => setShowPresetFilters((value) => !value)}>
             <SlidersHorizontal className="h-4 w-4" />
           </Button>
         </div>

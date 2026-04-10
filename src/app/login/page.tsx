@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, startTransition, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, useMotionTemplate, useMotionValue, useSpring } from "framer-motion";
 import {
   Activity,
   ArrowRight,
@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { IBERSOFT_BRAND } from "@/lib/exports";
+import { loginTechIcons } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 type AuthMode = "login" | "register";
@@ -32,15 +34,15 @@ const roleLabels = {
 } as const;
 
 const quickStats = [
-  { label: "Nodos", value: "24 activos" },
-  { label: "Tickets", value: "07 abiertos" },
-  { label: "SLA", value: "96% estable" }
+  { label: "Cloud", value: "24 nodos" },
+  { label: "Tickets", value: "07 vivos" },
+  { label: "Tarifa", value: "50 EUR/h" }
 ];
 
 const quickPoints = [
-  "Login rapido con sensacion profesional",
-  "Sesion local persistente para demo y preventa",
-  "Alta de usuarios lista para crecer con Supabase"
+  "Operacion cloud, sistemas y soporte premium",
+  "Sesion local persistente lista para crecer",
+  "Facturacion y conformidad preparadas para cliente"
 ];
 
 function LoginPageContent() {
@@ -53,17 +55,22 @@ function LoginPageContent() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loginForm, setLoginForm] = useState({
-    email: "carlos.martin@portalit.es",
+    email: "carlos.martin@ibersoft.es",
     password: "demo1234"
   });
   const [registerForm, setRegisterForm] = useState({
     name: "",
     email: "",
-    company: "Portal Incidencias",
+    company: IBERSOFT_BRAND.name,
     role: "technician",
     password: "",
     confirmPassword: ""
   });
+  const pointerX = useMotionValue(0);
+  const pointerY = useMotionValue(0);
+  const smoothX = useSpring(pointerX, { stiffness: 120, damping: 22 });
+  const smoothY = useSpring(pointerY, { stiffness: 120, damping: 22 });
+  const liveGlow = useMotionTemplate`radial-gradient(480px circle at ${smoothX}px ${smoothY}px, rgba(56,189,248,0.16), transparent 52%)`;
 
   useEffect(() => {
     if (hydrated && user) {
@@ -71,12 +78,38 @@ function LoginPageContent() {
     }
   }, [hydrated, nextPath, router, user]);
 
+  useEffect(() => {
+    if (!hydrated) return;
+
+    router.prefetch(nextPath);
+    router.prefetch("/app/dashboard");
+    router.prefetch("/app/partes");
+    router.prefetch("/app/clientes");
+  }, [hydrated, nextPath, router]);
+
   const heroBars = useMemo(
     () => [
-      { label: "Monitorizacion remota", value: "Estable", width: "84%" },
-      { label: "Backups nocturnos", value: "8/9", width: "72%" },
-      { label: "Acceso RDP", value: "Alto", width: "90%" }
+      { label: "Azure / M365", value: "Estable", width: "86%" },
+      { label: "Backups gestionados", value: "8/9", width: "72%" },
+      { label: "Acceso remoto", value: "Alto", width: "91%" }
     ],
+    []
+  );
+
+  const fallingIcons = useMemo(
+    () =>
+      Array.from({ length: 22 }, (_, index) => {
+        const techIcon = loginTechIcons[index % loginTechIcons.length];
+        return {
+          ...techIcon,
+          id: `${techIcon.label}-${index}`,
+          left: `${4 + ((index * 7.8) % 90)}%`,
+          size: 32 + (index % 3) * 8,
+          delay: `${(index % 7) * 0.9}s`,
+          duration: `${10 + (index % 5) * 2.2}s`,
+          opacity: 0.16 + (index % 4) * 0.06
+        };
+      }),
     []
   );
 
@@ -92,7 +125,9 @@ function LoginPageContent() {
     }
 
     setMessage("Acceso correcto. Entrando al portal...");
-    router.push(nextPath);
+    startTransition(() => {
+      router.push(nextPath);
+    });
   };
 
   const submitRegister = (event: React.FormEvent<HTMLFormElement>) => {
@@ -124,7 +159,9 @@ function LoginPageContent() {
     }
 
     setMessage("Cuenta creada correctamente. Redirigiendo...");
-    router.push(nextPath);
+    startTransition(() => {
+      router.push(nextPath);
+    });
   };
 
   if (!hydrated) {
@@ -132,15 +169,41 @@ function LoginPageContent() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden px-4 py-4 lg:px-8 lg:py-6">
-      <div className="pointer-events-none absolute inset-0 login-grid opacity-70" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(249,115,22,0.14),transparent_24%)]" />
+    <main
+      className="relative min-h-screen overflow-hidden px-4 py-4 lg:px-8 lg:py-6"
+      onPointerMove={(event) => {
+        pointerX.set(event.clientX);
+        pointerY.set(event.clientY);
+      }}
+    >
+      <div className="pointer-events-none absolute inset-0 login-grid opacity-60" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(249,115,22,0.12),transparent_24%)]" />
+      <motion.div className="pointer-events-none absolute inset-0" style={{ background: liveGlow }} />
+
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {fallingIcons.map((item) => (
+          <div
+            key={item.id}
+            className="tech-rain-icon absolute top-[-20%] flex items-center justify-center rounded-full border border-white/8 bg-slate-950/70 text-sky-200/80 shadow-soft backdrop-blur"
+            style={{
+              left: item.left,
+              width: `${item.size}px`,
+              height: `${item.size}px`,
+              opacity: item.opacity,
+              animationDelay: item.delay,
+              animationDuration: item.duration
+            }}
+          >
+            <item.icon className="h-4 w-4" />
+          </div>
+        ))}
+      </div>
 
       <div className="relative mx-auto grid min-h-[calc(100vh-2rem)] max-w-[1540px] gap-6 lg:grid-cols-[1.14fr_0.86fr]">
         <motion.section
-          initial={{ opacity: 0, y: 28 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, ease: "easeOut" }}
+          transition={{ duration: 0.55, ease: "easeOut" }}
           className="relative overflow-hidden rounded-[40px] border border-white/10 bg-slate-950/84 p-6 text-white shadow-soft backdrop-blur lg:p-10"
         >
           <div className="absolute inset-0 login-scanline" />
@@ -151,30 +214,30 @@ function LoginPageContent() {
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.12, duration: 0.5 }}
+                transition={{ delay: 0.08, duration: 0.42 }}
                 className="inline-flex items-center gap-2 rounded-full border border-sky-300/15 bg-white/5 px-4 py-2 text-sm font-semibold text-sky-200"
               >
                 <RadioTower className="h-4 w-4" />
-                Portal tecnico para soporte, mantenimiento y supervision
+                {IBERSOFT_BRAND.name} · cloud, sistemas, soporte y facturacion
               </motion.div>
 
               <div className="max-w-4xl space-y-5">
                 <motion.h1
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.18, duration: 0.55 }}
+                  transition={{ delay: 0.14, duration: 0.46 }}
                   className="text-5xl font-extrabold tracking-[-0.05em] text-white lg:text-7xl"
                 >
-                  Acceso operativo con presencia premium y cero friccion.
+                  Un acceso con atmosfera IT premium y lenguaje visual de sistemas cloud.
                 </motion.h1>
                 <motion.p
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.28, duration: 0.55 }}
+                  transition={{ delay: 0.2, duration: 0.48 }}
                   className="max-w-2xl text-lg leading-8 text-slate-300"
                 >
-                  Una entrada pensada para tecnicos y responsables de equipo: limpia, corporativa y lista para
-                  empezar a trabajar en segundos.
+                  Iconos tecnicos en movimiento, telemetria elegante y una entrada preparada para soporte, mantenimiento,
+                  cloud y control ejecutivo.
                 </motion.p>
               </div>
 
@@ -182,13 +245,13 @@ function LoginPageContent() {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.36, duration: 0.6 }}
+                  transition={{ delay: 0.26, duration: 0.5 }}
                   className="rounded-[30px] border border-sky-300/10 bg-white/5 p-5 backdrop-blur"
                 >
                   <div className="mb-5 flex items-center justify-between">
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.28em] text-sky-200/70">Live operations</p>
-                      <h2 className="mt-2 text-xl font-bold">Estado de la operacion</h2>
+                      <h2 className="mt-2 text-xl font-bold">Operacion Ibersoft</h2>
                     </div>
                     <div className="rounded-2xl border border-emerald-400/15 bg-emerald-400/10 px-3 py-2 text-xs font-semibold text-emerald-300">
                       Online
@@ -211,7 +274,7 @@ function LoginPageContent() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-white">Actividad de infraestructura</p>
-                        <p className="text-xs text-slate-400">Resumen visual inspirado en telemetria y soporte real</p>
+                        <p className="text-xs text-slate-400">Cloud, backup, accesos remotos y estado de servicio</p>
                       </div>
                     </div>
 
@@ -221,7 +284,7 @@ function LoginPageContent() {
                           key={item.label}
                           initial={{ opacity: 0, x: -12 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.48 + index * 0.08, duration: 0.42 }}
+                          transition={{ delay: 0.32 + index * 0.08, duration: 0.38 }}
                         >
                           <div className="mb-2 flex items-center justify-between text-xs text-slate-300">
                             <span>{item.label}</span>
@@ -231,7 +294,7 @@ function LoginPageContent() {
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: item.width }}
-                              transition={{ delay: 0.58 + index * 0.1, duration: 0.9, ease: "easeOut" }}
+                              transition={{ delay: 0.44 + index * 0.08, duration: 0.8, ease: "easeOut" }}
                               className="h-full rounded-full bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-300"
                             />
                           </div>
@@ -242,9 +305,9 @@ function LoginPageContent() {
                 </motion.div>
 
                 <motion.div
-                  initial={{ opacity: 0, y: 24 }}
+                  initial={{ opacity: 0, y: 22 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.44, duration: 0.65 }}
+                  transition={{ delay: 0.3, duration: 0.5 }}
                   className="grid gap-4"
                 >
                   <Card className="border-white/8 bg-white/5 text-white">
@@ -254,7 +317,7 @@ function LoginPageContent() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold">Acceso seguro</p>
-                        <p className="text-xs text-slate-400">Entrada limpia, rapida y corporativa</p>
+                        <p className="text-xs text-slate-400">Identidad corporativa ligera y elegante</p>
                       </div>
                     </div>
                   </Card>
@@ -264,7 +327,7 @@ function LoginPageContent() {
                     <div className="mt-4 space-y-3">
                       <div>
                         <p className="text-xs text-slate-400">Correo</p>
-                        <p className="font-semibold">carlos.martin@portalit.es</p>
+                        <p className="font-semibold">carlos.martin@ibersoft.es</p>
                       </div>
                       <div>
                         <p className="text-xs text-slate-400">Contrasena</p>
@@ -275,7 +338,7 @@ function LoginPageContent() {
                         type="button"
                         onClick={() => {
                           setMode("login");
-                          setLoginForm({ email: "carlos.martin@portalit.es", password: "demo1234" });
+                          setLoginForm({ email: "carlos.martin@ibersoft.es", password: "demo1234" });
                           setError("");
                           setMessage("Credenciales demo cargadas.");
                         }}
@@ -290,10 +353,10 @@ function LoginPageContent() {
                     <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Ventajas</p>
                     <div className="mt-4 space-y-3">
                       {quickPoints.map((item) => (
-                        <div key={item} className="flex items-center gap-3 text-sm text-slate-200">
+                        <motion.div key={item} whileHover={{ x: 4 }} className="flex items-center gap-3 text-sm text-slate-200">
                           <div className="h-2.5 w-2.5 rounded-full bg-sky-300" />
                           <span>{item}</span>
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
                   </Card>
@@ -304,21 +367,21 @@ function LoginPageContent() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.65, duration: 0.8 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
               className="hidden items-center gap-5 rounded-[30px] border border-white/8 bg-white/5 px-5 py-4 text-sm text-slate-300 xl:flex"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-400/10 text-sky-300">
                 <ShieldCheck className="h-5 w-5" />
               </div>
-              <p>Diseno enfocado en fiabilidad, control y tecnologia sin recargar la experiencia de acceso.</p>
+              <p>Minimalismo premium con iconografia IT, soporte cloud y lectura inmediata de operacion.</p>
             </motion.div>
           </div>
         </motion.section>
 
         <motion.section
-          initial={{ opacity: 0, y: 28 }}
+          initial={{ opacity: 0, y: 22 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.72, delay: 0.16, ease: "easeOut" }}
+          transition={{ duration: 0.58, delay: 0.14, ease: "easeOut" }}
           className="relative rounded-[40px] border border-border/70 bg-card/82 p-5 shadow-soft backdrop-blur lg:p-8"
         >
           <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
@@ -331,7 +394,7 @@ function LoginPageContent() {
               </div>
               <h2 className="text-3xl font-extrabold tracking-tight lg:text-4xl">Entra al portal</h2>
               <p className="text-sm leading-6 text-muted-foreground">
-                Interfaz ligera, moderna y agradable para arrancar la jornada sin ruido visual.
+                Pantalla de acceso optimizada para sentirse rapida, clara y profesional desde el primer clic.
               </p>
             </div>
 
@@ -391,12 +454,7 @@ function LoginPageContent() {
               </motion.div>
             ) : null}
 
-            <motion.div
-              key={mode}
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.32, ease: "easeOut" }}
-            >
+            <motion.div key={mode} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: "easeOut" }}>
               {mode === "login" ? (
                 <form className="space-y-4" onSubmit={submitLogin}>
                   <Card className="space-y-5 border-border/60 bg-background/60">
@@ -408,7 +466,7 @@ function LoginPageContent() {
                           type="email"
                           value={loginForm.email}
                           onChange={(event) => setLoginForm((current) => ({ ...current, email: event.target.value }))}
-                          placeholder="tecnico@empresa.com"
+                          placeholder="tecnico@ibersoft.es"
                           className="h-12 rounded-2xl bg-background/80 pl-11"
                           required
                         />
@@ -422,9 +480,7 @@ function LoginPageContent() {
                         <Input
                           type="password"
                           value={loginForm.password}
-                          onChange={(event) =>
-                            setLoginForm((current) => ({ ...current, password: event.target.value }))
-                          }
+                          onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
                           placeholder="Introduce tu contrasena"
                           className="h-12 rounded-2xl bg-background/80 pl-11"
                           required
@@ -433,7 +489,7 @@ function LoginPageContent() {
                     </div>
 
                     <div className="rounded-2xl border border-border/60 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-                      Acceso pensado para tecnicos, supervisores y administracion.
+                      Acceso pensado para tecnico, supervisor, administracion y crecimiento hacia un portal completo de empresa.
                     </div>
 
                     <Button className="h-12 w-full rounded-2xl text-base">
@@ -452,9 +508,7 @@ function LoginPageContent() {
                           <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                           <Input
                             value={registerForm.name}
-                            onChange={(event) =>
-                              setRegisterForm((current) => ({ ...current, name: event.target.value }))
-                            }
+                            onChange={(event) => setRegisterForm((current) => ({ ...current, name: event.target.value }))}
                             placeholder="Lucia Gomez"
                             required
                             className="h-12 rounded-2xl bg-background/80 pl-11"
@@ -469,10 +523,8 @@ function LoginPageContent() {
                           <Input
                             type="email"
                             value={registerForm.email}
-                            onChange={(event) =>
-                              setRegisterForm((current) => ({ ...current, email: event.target.value }))
-                            }
-                            placeholder="lucia@empresa.com"
+                            onChange={(event) => setRegisterForm((current) => ({ ...current, email: event.target.value }))}
+                            placeholder="lucia@ibersoft.es"
                             required
                             className="h-12 rounded-2xl bg-background/80 pl-11"
                           />
@@ -483,10 +535,8 @@ function LoginPageContent() {
                         <label className="text-sm font-medium">Empresa</label>
                         <Input
                           value={registerForm.company}
-                          onChange={(event) =>
-                            setRegisterForm((current) => ({ ...current, company: event.target.value }))
-                          }
-                          placeholder="Portal Incidencias"
+                          onChange={(event) => setRegisterForm((current) => ({ ...current, company: event.target.value }))}
+                          placeholder={IBERSOFT_BRAND.name}
                           className="h-12 rounded-2xl bg-background/80"
                           required
                         />
@@ -512,9 +562,7 @@ function LoginPageContent() {
                         <Input
                           type="password"
                           value={registerForm.password}
-                          onChange={(event) =>
-                            setRegisterForm((current) => ({ ...current, password: event.target.value }))
-                          }
+                          onChange={(event) => setRegisterForm((current) => ({ ...current, password: event.target.value }))}
                           placeholder="Minimo 6 caracteres"
                           required
                           className="h-12 rounded-2xl bg-background/80"
@@ -526,9 +574,7 @@ function LoginPageContent() {
                         <Input
                           type="password"
                           value={registerForm.confirmPassword}
-                          onChange={(event) =>
-                            setRegisterForm((current) => ({ ...current, confirmPassword: event.target.value }))
-                          }
+                          onChange={(event) => setRegisterForm((current) => ({ ...current, confirmPassword: event.target.value }))}
                           placeholder="Repite la contrasena"
                           required
                           className="h-12 rounded-2xl bg-background/80"
@@ -549,7 +595,7 @@ function LoginPageContent() {
               <Link href="/" className="font-semibold text-primary">
                 Volver a la landing
               </Link>
-              <span>Preparado para conectar Supabase Auth cuando quieras.</span>
+              <span>{IBERSOFT_BRAND.name} listo para crecer hacia un portal de servicio completo.</span>
             </div>
           </div>
         </motion.section>

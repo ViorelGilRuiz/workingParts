@@ -1,15 +1,27 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { clients, reports as seedReports, teamMembers } from "@/data/demo";
+import { clients as seedClients, reports as seedReports, teamMembers } from "@/data/demo";
 import { useAuth } from "@/components/providers/auth-provider";
 import { getReportAnalytics } from "@/lib/report-analytics";
-import { WorkReport } from "@/types";
+import { Client, WorkReport } from "@/types";
 
-const STORAGE_KEY = "portal-incidencias-reports";
+const REPORTS_STORAGE_KEY = "portal-incidencias-reports";
+const CLIENTS_STORAGE_KEY = "portal-incidencias-clients";
+
+interface CreateClientInput {
+  name: string;
+  company: string;
+  contact: string;
+  sector: string;
+  city: string;
+  sla: string;
+}
 
 interface CreateReportInput {
   client: string;
+  company: string;
+  contact: string;
   technicianId: string;
   date: string;
   type: string;
@@ -27,8 +39,10 @@ interface CreateReportInput {
 
 interface ReportsContextValue {
   reports: WorkReport[];
+  clients: Client[];
   hydrated: boolean;
   analytics: ReturnType<typeof getReportAnalytics>;
+  createClient: (input: CreateClientInput) => Client;
   createReport: (input: CreateReportInput) => WorkReport;
   getReportById: (id: string) => WorkReport | undefined;
   updateReport: (id: string, updates: Partial<WorkReport>) => void;
@@ -36,6 +50,26 @@ interface ReportsContextValue {
 }
 
 const ReportsContext = createContext<ReportsContextValue | null>(null);
+const DEFAULT_HOURLY_RATE = 50;
+
+function normalizeReport(report: WorkReport): WorkReport {
+  return {
+    ...report,
+    clientSignatureName: report.clientSignatureName ?? "",
+    clientSignatureDataUrl: report.clientSignatureDataUrl ?? "",
+    signedAt: report.signedAt ?? null,
+    hourlyRate: report.hourlyRate ?? DEFAULT_HOURLY_RATE,
+    maintenanceIncluded: report.maintenanceIncluded ?? true
+  };
+}
+
+function normalizeClient(client: Client): Client {
+  return {
+    ...client,
+    monthlyHours: client.monthlyHours ?? 0,
+    recurringIssues: client.recurringIssues ?? 0
+  };
+}
 
 function getNextReportId(items: WorkReport[], reportDate: string) {
   const year = new Date(reportDate).getFullYear();
@@ -66,23 +100,37 @@ function buildTags(category: string, reason: string) {
   return Array.from(new Set([category, ...words.slice(0, 3)])).slice(0, 4);
 }
 
+function createClientId() {
+  return `c-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export function ReportsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [reports, setReports] = useState<WorkReport[]>(seedReports);
+  const [clients, setClients] = useState<Client[]>(seedClients);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
-      const savedReports = window.localStorage.getItem(STORAGE_KEY);
+      const savedReports = window.localStorage.getItem(REPORTS_STORAGE_KEY);
+      const savedClients = window.localStorage.getItem(CLIENTS_STORAGE_KEY);
 
       if (savedReports) {
-        const parsedReports = JSON.parse(savedReports) as WorkReport[];
-        if (Array.isArray(parsedReports) && parsedReports.length > 0) {
+        const parsedReports = (JSON.parse(savedReports) as WorkReport[]).map(normalizeReport);
+        if (Array.isArray(parsedReports)) {
           setReports(parsedReports);
         }
       }
+
+      if (savedClients) {
+        const parsedClients = (JSON.parse(savedClients) as Client[]).map(normalizeClient);
+        if (Array.isArray(parsedClients)) {
+          setClients(parsedClients);
+        }
+      }
     } catch {
-      setReports(seedReports);
+      setReports(seedReports.map(normalizeReport));
+      setClients(seedClients.map(normalizeClient));
     } finally {
       setHydrated(true);
     }
@@ -90,8 +138,37 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
+    window.localStorage.setItem(REPORTS_STORAGE_KEY, JSON.stringify(reports));
   }, [hydrated, reports]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    window.localStorage.setItem(CLIENTS_STORAGE_KEY, JSON.stringify(clients));
+  }, [clients, hydrated]);
+
+  const createClient = useCallback((input: CreateClientInput) => {
+    const normalizedName = input.name.trim().toLowerCase();
+    const existing = clients.find((item) => item.name.trim().toLowerCase() === normalizedName);
+
+    if (existing) {
+      return existing;
+    }
+
+    const createdClient: Client = {
+      id: createClientId(),
+      name: input.name.trim(),
+      company: input.company.trim(),
+      contact: input.contact.trim(),
+      sector: input.sector.trim(),
+      city: input.city.trim(),
+      monthlyHours: 0,
+      recurringIssues: 0,
+      sla: input.sla.trim()
+    };
+
+    setClients((current) => [createdClient, ...current]);
+    return createdClient;
+  }, [clients]);
 
   const updateReport = useCallback((id: string, updates: Partial<WorkReport>) => {
     setReports((current) => current.map((report) => (report.id === id ? { ...report, ...updates } : report)));
@@ -104,26 +181,32 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<ReportsContextValue>(
     () => ({
       reports,
+      clients,
       hydrated,
       analytics: getReportAnalytics(reports),
+      createClient,
       createReport: (input) => {
-        const client = clients.find((item) => item.name === input.client);
+        const selectedClient = clients.find((item) => item.name.trim().toLowerCase() === input.client.trim().toLowerCase());
         const technician =
           teamMembers.find((item) => item.id === input.technicianId) ??
           (user?.id === input.technicianId ? user : undefined);
 
-        if (!client || !technician) {
-          throw new Error("No se ha podido asociar el cliente o el técnico.");
+        if (!technician) {
+          throw new Error("No se ha podido asociar el tecnico.");
         }
+
+        const clientName = selectedClient?.name ?? input.client.trim();
+        const company = selectedClient?.company ?? (input.company.trim() || clientName);
+        const contact = selectedClient?.contact ?? (input.contact.trim() || "Pendiente de definir");
 
         const newReport: WorkReport = {
           id: getNextReportId(reports, input.date),
           date: input.date,
           technician: technician.name,
           technicianId: technician.id,
-          client: client.name,
-          company: client.company,
-          contact: client.contact,
+          client: clientName,
+          company,
+          contact,
           type: input.type,
           category: input.category,
           priority: input.priority,
@@ -136,7 +219,12 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
           observations: input.observations?.trim() ?? "",
           status: input.status,
           hasSignature: input.hasSignature,
+          clientSignatureName: "",
+          clientSignatureDataUrl: "",
+          signedAt: null,
           attachments: 0,
+          hourlyRate: DEFAULT_HOURLY_RATE,
+          maintenanceIncluded: true,
           tags: buildTags(input.category, input.reason)
         };
 
@@ -147,7 +235,7 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
       updateReport,
       deleteReport
     }),
-    [deleteReport, hydrated, reports, updateReport, user]
+    [clients, createClient, deleteReport, hydrated, reports, updateReport, user]
   );
 
   return <ReportsContext.Provider value={value}>{children}</ReportsContext.Provider>;

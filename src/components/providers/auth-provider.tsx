@@ -36,14 +36,14 @@ interface AuthContextValue {
 const seedUsers: StoredAuthUser[] = [
   {
     ...currentUser,
-    company: "Portal Incidencias",
+    company: "Ibersoft",
     password: "demo1234"
   },
   ...teamMembers
     .filter((member) => member.id !== currentUser.id)
     .map((member, index) => ({
       ...member,
-      company: "Portal Incidencias",
+      company: "Ibersoft",
       password: `demo123${index + 5}`
     }))
 ];

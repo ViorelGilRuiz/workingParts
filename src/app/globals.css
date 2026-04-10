@@ -111,6 +111,20 @@ body {
   }
 }
 
+@keyframes tech-rain {
+  0% {
+    transform: translate3d(0, -14vh, 0) scale(0.92);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(0, 118vh, 0) scale(1.06);
+    opacity: 0;
+  }
+}
+
 .login-grid {
   background-image:
     linear-gradient(rgba(125, 211, 252, 0.08) 1px, transparent 1px),
@@ -134,6 +148,13 @@ body {
   background: linear-gradient(to bottom, transparent 0%, rgba(56, 189, 248, 0.12) 50%, transparent 100%);
   animation: scanline 6s linear infinite;
   pointer-events: none;
+}
+
+.tech-rain-icon {
+  animation-name: tech-rain;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
 }
 
 ::-webkit-scrollbar {

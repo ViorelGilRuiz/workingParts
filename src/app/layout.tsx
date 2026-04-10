@@ -9,9 +9,8 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Portal Incidencias IT",
-  description:
-    "Portal profesional para la gestión de partes de trabajo técnico, productividad y supervisión empresarial."
+  title: "Ibersoft Portal IT",
+  description: "Portal profesional de Ibersoft para gestion de partes tecnicos, productividad y supervision empresarial."
 };
 
 export default function RootLayout({

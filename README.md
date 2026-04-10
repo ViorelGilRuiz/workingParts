@@ -1,66 +1,83 @@
-# Portal Incidencias IT
+# Ibersoft Portal IT
 
-Portal profesional para gestionar partes tecnicos, clientes, equipos y metricas operativas desde una interfaz moderna construida con Next.js 15.
+Portal premium para soporte IT, tickets, clientes, supervision y facturacion ligera construido con `Next.js 15`.
 
-## Que incluye
+## Vision
 
-- Login y registro demo con persistencia local
-- Dashboard ejecutivo con KPIs, graficas y timeline
-- Modulos de partes, clientes, equipo, incidencias y administracion
+Esta aplicacion esta pensada para un flujo real de empresa:
+
+- El tecnico registra tickets y partes de trabajo de forma rapida.
+- El cliente puede validar el servicio con firma digital.
+- El jefe consulta historico, carga del equipo, horas y actividad.
+- Administracion dispone de una base elegante para exportar PDF y preparar facturacion.
+
+La base de datos local arranca vacia en clientes y tickets para evitar demos falsas y permitir empezar desde cero.
+
+## Lo que ya incluye
+
+- Login visual premium con identidad `Ibersoft`
+- Menu lateral grande, ordenado y minimalista
+- Dashboard limpio con estados vacios elegantes
+- Alta manual de clientes
+- Flujo de tickets con plantillas tecnicas reutilizables
+- Historico visual de tickets
+- Tabla de tickets con filtros
+- Detalle de parte con firma digital
+- Exportacion de PDF tipo factura
+- Exportacion de resumen en PDF y Excel
+- Vistas para equipo, administracion, patrones e historico mensual
 - Tema claro/oscuro persistente
-- Interfaz minimalista con transiciones suaves y enfoque corporativo
-- Preparado para evolucionar a Supabase Auth y persistencia real
 
 ## Stack
 
-- Next.js 15
-- React 19
-- TypeScript
-- Tailwind CSS
-- Framer Motion
-- Supabase JS
+- `Next.js 15`
+- `React 19`
+- `TypeScript`
+- `Tailwind CSS`
+- `Framer Motion`
+- `Recharts`
+- `ExcelJS`
+- `jsPDF`
 
 ## Arranque local
 
-1. Instala dependencias:
-
 ```bash
 npm install
-```
-
-2. Crea `.env.local` a partir de `.env.example`:
-
-```bash
-cp .env.example .env.local
-```
-
-3. Inicia el entorno de desarrollo:
-
-```bash
 npm run dev
 ```
 
-4. Abre:
+Produccion local:
+
+```bash
+npm run build
+npm run start
+```
+
+Abrir en navegador:
 
 ```text
 http://localhost:3000
 ```
 
-## Credenciales demo
+## Credenciales demo de acceso
 
-- Email: `carlos.martin@portalit.es`
-- Contrasena: `demo1234`
+El portal mantiene usuarios demo solo para autenticacion local:
 
-## Variables de entorno
+- `carlos.martin@ibersoft.es` / `demo1234`
+- `lucia@ibersoft.es` / `demo1235`
+- `diego@ibersoft.es` / `demo1236`
+- `sara@ibersoft.es` / `demo1237`
 
-```env
-NEXT_PUBLIC_APP_NAME=Portal Incidencias IT
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-NEXT_PUBLIC_DEFAULT_THEME=dark
-NEXT_PUBLIC_COMPANY_NAME=Portal Incidencias
-```
+Clientes y tickets no vienen precargados.
+
+## Flujo recomendado
+
+1. Entrar al portal.
+2. Crear los primeros clientes en `Clientes`.
+3. Registrar tickets en `Tickets y partes`.
+4. Firmar el parte desde el detalle.
+5. Exportar el PDF tipo factura.
+6. Consultar dashboard, historico y resumen mensual.
 
 ## Scripts utiles
 
@@ -71,39 +88,47 @@ npm run start
 npm run typecheck
 ```
 
-## Estado actual
+## Estructura funcional
 
-- `npm run build` validado correctamente
-- `npm run typecheck` validado correctamente
-- Rutas comprobadas en local:
-  - `/`
-  - `/login`
-  - `/app/dashboard`
-  - `/app/partes`
+- `src/app/login`: acceso visual y registro local
+- `src/app/app/dashboard`: centro ejecutivo y onboarding
+- `src/app/app/partes`: flujo principal de tickets
+- `src/app/app/clientes`: alta manual y cartera
+- `src/app/app/partes/[id]`: detalle, firma y PDF premium
+- `src/app/app/resumen-mensual`: control de horas y facturacion
+- `src/app/app/admin`: estructura y crecimiento del backoffice
+
+## Validacion recomendada antes de desplegar
+
+```bash
+npm run typecheck
+npm run build
+```
 
 ## Despliegue en Netlify
 
-El proyecto ya incluye `netlify.toml` con:
+El proyecto esta preparado para compilar con:
 
-- Build command: `npm run build`
-- Publish directory: `.next`
-- Node version: `20`
+```bash
+npm run build
+```
 
-Pasos:
+Variables utiles:
 
-1. Conecta el repositorio en Netlify.
-2. Configura estas variables de entorno:
-   - `NEXT_PUBLIC_APP_NAME`
-   - `NEXT_PUBLIC_DEFAULT_THEME`
-   - `NEXT_PUBLIC_COMPANY_NAME`
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY` si activas integracion real
-3. Lanza el deploy de produccion.
+```env
+NEXT_PUBLIC_APP_NAME=Ibersoft Portal IT
+NEXT_PUBLIC_DEFAULT_THEME=dark
+NEXT_PUBLIC_COMPANY_NAME=Ibersoft
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
 
-## Siguientes mejoras recomendadas
+## Siguientes mejoras naturales
 
-- Sustituir la autenticacion demo por Supabase Auth
-- Persistir partes y clientes en base de datos real
-- Anadir tests E2E
-- Activar exportacion real de informes
+- Persistencia real en Supabase o Postgres
+- Envio real de facturas por email
+- Calendario de visitas y mantenimientos
+- Control de cobros pendientes
+- Roles y permisos conectados a backend
+- KPI avanzados por tecnico y cliente

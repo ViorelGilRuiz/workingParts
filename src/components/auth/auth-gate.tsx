@@ -17,6 +17,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     }
   }, [hydrated, pathname, router, user]);
 
+  useEffect(() => {
+    if (!hydrated || !user) return;
+    router.prefetch("/app/dashboard");
+    router.prefetch("/app/partes");
+  }, [hydrated, router, user]);
+
   if (!hydrated) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">

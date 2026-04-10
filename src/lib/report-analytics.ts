@@ -1,4 +1,3 @@
-import { clients } from "@/data/demo";
 import { IncidentTrend, MonthlyMetric, ReportAnalytics, WorkReport } from "@/types";
 
 function getWeekKey(date: Date) {
@@ -18,7 +17,7 @@ function buildMonthlySummary(reports: WorkReport[]): MonthlyMetric[] {
     const current = monthMap.get(month) ?? { month, reports: 0, hours: 0, billable: 0 };
     current.reports += 1;
     current.hours += report.durationHours;
-    current.billable += report.durationHours * 52;
+    current.billable += report.durationHours * report.hourlyRate;
     monthMap.set(month, current);
   });
 
@@ -80,20 +79,17 @@ export function getReportAnalytics(reports: WorkReport[]): ReportAnalytics {
 
     issueMap.set(issueKey, (issueMap.get(issueKey) ?? 0) + 1);
 
-    const clientId = clients.find((client) => client.name === report.client)?.id ?? report.client;
     const clientSummary =
       clientMap.get(report.client) ??
-      ({ clientId, name: report.client, hours: 0, reports: 0, repeatedIssues: 0, lastVisit: null } as const);
+      ({ clientId: report.client, name: report.client, hours: 0, reports: 0, repeatedIssues: 0, lastVisit: null } as const);
 
-    const nextClientSummary = {
+    clientMap.set(report.client, {
       ...clientSummary,
       hours: clientSummary.hours + report.durationHours,
       reports: clientSummary.reports + 1,
       lastVisit:
         !clientSummary.lastVisit || new Date(report.date) > new Date(clientSummary.lastVisit) ? report.date : clientSummary.lastVisit
-    };
-
-    clientMap.set(report.client, nextClientSummary);
+    });
   });
 
   issueMap.forEach((count, compositeKey) => {

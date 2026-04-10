@@ -40,7 +40,12 @@ export interface WorkReport {
   observations: string;
   status: "Pendiente" | "Resuelto" | "En seguimiento" | "Cerrado";
   hasSignature: boolean;
+  clientSignatureName: string;
+  clientSignatureDataUrl: string;
+  signedAt: string | null;
   attachments: number;
+  hourlyRate: number;
+  maintenanceIncluded: boolean;
   tags: string[];
 }
 
