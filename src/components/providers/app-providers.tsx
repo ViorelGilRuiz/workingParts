@@ -12,14 +12,31 @@ interface AppContextValue {
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
+const THEME_STORAGE_KEY = "portal-incidencias-theme";
+
+function getInitialTheme(): Theme {
+  const fallbackTheme = process.env.NEXT_PUBLIC_DEFAULT_THEME === "light" ? "light" : "dark";
+
+  if (typeof window === "undefined") {
+    return fallbackTheme;
+  }
+
+  const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+  if (storedTheme === "light" || storedTheme === "dark") {
+    return storedTheme;
+  }
+
+  return fallbackTheme;
+}
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(theme);
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
 
   const value = useMemo(

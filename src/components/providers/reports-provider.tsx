@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { clients, reports as seedReports, teamMembers } from "@/data/demo";
 import { useAuth } from "@/components/providers/auth-provider";
 import { getReportAnalytics } from "@/lib/report-analytics";
@@ -31,6 +31,8 @@ interface ReportsContextValue {
   analytics: ReturnType<typeof getReportAnalytics>;
   createReport: (input: CreateReportInput) => WorkReport;
   getReportById: (id: string) => WorkReport | undefined;
+  updateReport: (id: string, updates: Partial<WorkReport>) => void;
+  deleteReport: (id: string) => void;
 }
 
 const ReportsContext = createContext<ReportsContextValue | null>(null);
@@ -91,6 +93,14 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
   }, [hydrated, reports]);
 
+  const updateReport = useCallback((id: string, updates: Partial<WorkReport>) => {
+    setReports((current) => current.map((report) => (report.id === id ? { ...report, ...updates } : report)));
+  }, []);
+
+  const deleteReport = useCallback((id: string) => {
+    setReports((current) => current.filter((report) => report.id !== id));
+  }, []);
+
   const value = useMemo<ReportsContextValue>(
     () => ({
       reports,
@@ -133,9 +143,11 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
         setReports((current) => [newReport, ...current]);
         return newReport;
       },
-      getReportById: (id) => reports.find((report) => report.id === id)
+      getReportById: (id) => reports.find((report) => report.id === id),
+      updateReport,
+      deleteReport
     }),
-    [hydrated, reports, user]
+    [deleteReport, hydrated, reports, updateReport, user]
   );
 
   return <ReportsContext.Provider value={value}>{children}</ReportsContext.Provider>;
