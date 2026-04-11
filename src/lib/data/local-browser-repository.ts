@@ -1,10 +1,12 @@
 import { clients as seedClients, reports as seedReports } from "@/data/demo";
-import { Client, WorkReport } from "@/types";
-import { clientListSchema, workReportListSchema } from "@/lib/data/schemas";
+import { ActivityItem, Client, UserPreferences, WorkReport } from "@/types";
+import { activityItemListSchema, clientListSchema, userPreferencesSchema, workReportListSchema } from "@/lib/data/schemas";
 import { WorkingPartsRepository } from "@/lib/data/repository";
 
 const CLIENTS_STORAGE_KEY = "portal-incidencias-clients";
 const REPORTS_STORAGE_KEY = "portal-incidencias-reports";
+const PREFERENCES_STORAGE_KEY = "portal-incidencias-preferences";
+const ACTIVITY_STORAGE_KEY = "portal-incidencias-activity";
 
 function normalizeClient(client: Client): Client {
   return {
@@ -35,6 +37,21 @@ function readParsedValue<T>(key: string, fallback: T, parse: (value: unknown) =>
   }
 }
 
+function readDictionary<T>(key: string): Record<string, T> {
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, T>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeDictionary<T>(key: string, value: Record<string, T>) {
+  window.localStorage.setItem(key, JSON.stringify(value));
+}
+
 export function createLocalBrowserRepository(): WorkingPartsRepository {
   return {
     strategy: "local-browser",
@@ -53,6 +70,28 @@ export function createLocalBrowserRepository(): WorkingPartsRepository {
     },
     async saveReports(reports) {
       window.localStorage.setItem(REPORTS_STORAGE_KEY, JSON.stringify(reports));
+    },
+    async loadPreferences(userId) {
+      const items = readDictionary<unknown>(PREFERENCES_STORAGE_KEY);
+      const raw = items[userId];
+      if (!raw) return null;
+      return userPreferencesSchema.parse(raw);
+    },
+    async savePreferences(preferences) {
+      const items = readDictionary<UserPreferences>(PREFERENCES_STORAGE_KEY);
+      items[preferences.userId] = preferences;
+      writeDictionary(PREFERENCES_STORAGE_KEY, items);
+    },
+    async loadActivity(userId) {
+      const items = readDictionary<unknown>(ACTIVITY_STORAGE_KEY);
+      const raw = items[userId];
+      if (!raw) return [];
+      return activityItemListSchema.parse(raw);
+    },
+    async saveActivity(userId, items) {
+      const dictionary = readDictionary<ActivityItem[]>(ACTIVITY_STORAGE_KEY);
+      dictionary[userId] = items;
+      writeDictionary(ACTIVITY_STORAGE_KEY, dictionary);
     }
   };
 }

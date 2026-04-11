@@ -48,9 +48,13 @@ export default function ClientsPage() {
       return;
     }
 
-    const created = createClient(clientForm);
+    const { client: created, isDuplicate } = createClient(clientForm);
     setClientForm(initialClientForm);
-    setMessage(`Cliente ${created.name} guardado correctamente.`);
+    setMessage(
+      isDuplicate
+        ? `El cliente ${created.name} ya existia y se ha reutilizado.`
+        : `Cliente ${created.name} guardado correctamente.`
+    );
   };
 
   return (

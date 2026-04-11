@@ -43,10 +43,18 @@ function getToday() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function normalizeDraftPriority(value?: string): "Alta" | "Media" | "Baja" {
+  return value === "Alta" || value === "Baja" ? value : "Media";
+}
+
+function normalizeDraftStatus(value?: string): "Pendiente" | "Resuelto" | "En seguimiento" | "Cerrado" {
+  return value === "Resuelto" || value === "En seguimiento" || value === "Cerrado" ? value : "Pendiente";
+}
+
 export function ReportForm() {
   const router = useRouter();
   const { user } = useAuth();
-  const { clients, createReport } = useReports();
+  const { preferences, suggestedClients, clients, createReport, saveReportDraft, clearReportDraft } = useReports();
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
   const [attachmentCount, setAttachmentCount] = useState(0);
 
@@ -62,22 +70,22 @@ export function ReportForm() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      client: "",
-      company: "",
-      contact: "",
+      client: preferences?.reportDraft?.client ?? "",
+      company: preferences?.reportDraft?.company ?? "",
+      contact: preferences?.reportDraft?.contact ?? "",
       technicianId: user && user.role !== "admin" ? user.id : selectableTechnicians[0]?.id ?? "",
-      date: getToday(),
-      type: "Remoto",
-      category: "Office 365",
-      priority: "Media",
-      status: "Pendiente",
-      startTime: "09:00",
-      endTime: "10:00",
-      reason: "",
-      workDone: "",
-      solution: "",
-      observations: "",
-      hasSignature: false
+      date: preferences?.reportDraft?.date ?? getToday(),
+      type: preferences?.reportDraft?.type ?? "Remoto",
+      category: preferences?.reportDraft?.category ?? "Office 365",
+      priority: preferences?.reportDraft?.priority ?? "Media",
+      status: preferences?.reportDraft?.status ?? "Pendiente",
+      startTime: preferences?.reportDraft?.startTime ?? "09:00",
+      endTime: preferences?.reportDraft?.endTime ?? "10:00",
+      reason: preferences?.reportDraft?.reason ?? "",
+      workDone: preferences?.reportDraft?.workDone ?? "",
+      solution: preferences?.reportDraft?.solution ?? "",
+      observations: preferences?.reportDraft?.observations ?? "",
+      hasSignature: preferences?.reportDraft?.hasSignature ?? false
     }
   });
 
@@ -86,12 +94,63 @@ export function ReportForm() {
   const selectedClient = form.watch("client");
 
   useEffect(() => {
+    if (!preferences?.reportDraft) return;
+
+    form.reset({
+      client: preferences.reportDraft.client,
+      company: preferences.reportDraft.company,
+      contact: preferences.reportDraft.contact,
+      technicianId: preferences.reportDraft.technicianId || (user && user.role !== "admin" ? user.id : selectableTechnicians[0]?.id ?? ""),
+      date: preferences.reportDraft.date,
+      type: preferences.reportDraft.type,
+      category: preferences.reportDraft.category,
+      priority: preferences.reportDraft.priority,
+      status: preferences.reportDraft.status,
+      startTime: preferences.reportDraft.startTime,
+      endTime: preferences.reportDraft.endTime,
+      reason: preferences.reportDraft.reason,
+      workDone: preferences.reportDraft.workDone,
+      solution: preferences.reportDraft.solution,
+      observations: preferences.reportDraft.observations,
+      hasSignature: preferences.reportDraft.hasSignature
+    });
+  }, [form, preferences?.reportDraft, selectableTechnicians, user]);
+
+  useEffect(() => {
     const matchedClient = clients.find((item) => item.name.trim().toLowerCase() === selectedClient.trim().toLowerCase());
     if (!matchedClient) return;
 
     form.setValue("company", matchedClient.company, { shouldDirty: true });
     form.setValue("contact", matchedClient.contact, { shouldDirty: true });
   }, [clients, form, selectedClient]);
+
+  useEffect(() => {
+    if (!preferences) return;
+
+    const subscription = form.watch((values) => {
+      const draft = values as FormValues;
+      saveReportDraft({
+        client: draft.client ?? "",
+        company: draft.company ?? "",
+        contact: draft.contact ?? "",
+        technicianId: draft.technicianId ?? "",
+        date: draft.date ?? getToday(),
+        type: draft.type ?? "Remoto",
+        category: draft.category ?? "Office 365",
+        priority: normalizeDraftPriority(draft.priority),
+        status: normalizeDraftStatus(draft.status),
+        startTime: draft.startTime ?? "09:00",
+        endTime: draft.endTime ?? "10:00",
+        reason: draft.reason ?? "",
+        workDone: draft.workDone ?? "",
+        solution: draft.solution ?? "",
+        observations: draft.observations ?? "",
+        hasSignature: draft.hasSignature ?? false
+      });
+    });
+
+    return () => subscription.unsubscribe();
+  }, [form, preferences, saveReportDraft]);
 
   const duration = useMemo(() => {
     if (!startTime || !endTime) return "0.0 h";
@@ -117,7 +176,7 @@ export function ReportForm() {
       reason: values.reason,
       workDone: values.workDone,
       solution: values.solution,
-      observations: values.observations,
+      observations: values.observations ?? "",
       hasSignature: values.hasSignature
     });
 
@@ -139,6 +198,7 @@ export function ReportForm() {
       observations: "",
       hasSignature: false
     });
+    clearReportDraft();
 
     router.push(`/app/partes/${report.id}`);
   });
@@ -160,10 +220,11 @@ export function ReportForm() {
       reason: values.reason.trim() || "Borrador pendiente de completar",
       workDone: values.workDone.trim() || "Pendiente de documentar",
       solution: values.solution.trim() || "Pendiente de documentar",
-      observations: values.observations,
+      observations: values.observations ?? "",
       hasSignature: values.hasSignature
     });
 
+    clearReportDraft();
     router.push(`/app/partes/${report.id}`);
   };
 
@@ -195,6 +256,11 @@ export function ReportForm() {
           <div className="rounded-2xl bg-secondary/15 px-4 py-2 text-sm font-semibold text-secondary-foreground">
             Tarifa base {IBERSOFT_BRAND.hourlyRate} EUR/h
           </div>
+          {preferences?.reportDraft?.reason ? (
+            <div className="rounded-2xl bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300">
+              Borrador activo
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -260,7 +326,7 @@ export function ReportForm() {
           <label className="text-sm font-medium">Cliente</label>
           <Input list="clients-list" placeholder="Nombre comercial del cliente" {...form.register("client")} />
           <datalist id="clients-list">
-            {clients.map((client) => (
+            {suggestedClients.map((client) => (
               <option key={client.id} value={client.name} />
             ))}
           </datalist>
@@ -269,6 +335,20 @@ export function ReportForm() {
               ? "Puedes escribir o elegir un cliente existente."
               : "Todavia no hay clientes guardados. Puedes escribir uno manualmente o crearlo en Clientes."}
           </p>
+          {preferences?.recentClients?.length ? (
+            <div className="flex flex-wrap gap-2 pt-2">
+              {preferences.recentClients.slice(0, 4).map((client) => (
+                <button
+                  key={client}
+                  type="button"
+                  onClick={() => form.setValue("client", client, { shouldDirty: true })}
+                  className="rounded-full border border-border/70 bg-background/50 px-3 py-1 text-xs font-medium text-muted-foreground transition hover:border-primary/30 hover:text-foreground"
+                >
+                  {client}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="space-y-2">
@@ -380,6 +460,16 @@ export function ReportForm() {
           <Button type="submit">Guardar parte</Button>
           <Button type="button" variant="outline" onClick={saveDraft}>
             Guardar borrador
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              form.reset();
+              clearReportDraft();
+            }}
+          >
+            Limpiar
           </Button>
           <input
             ref={attachmentInputRef}

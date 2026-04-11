@@ -35,7 +35,7 @@ const ReportsTimeline = dynamic(
 );
 
 export default function DashboardPage() {
-  const { clients, reports, analytics } = useReports();
+  const { clients, reports, analytics, preferences, recentActivity } = useReports();
 
   const dashboardKpis = useMemo(
     () => [
@@ -196,6 +196,50 @@ export default function DashboardPage() {
       <section className="grid gap-4 xl:grid-cols-[1fr_0.95fr]">
         <IncidentChart data={analytics.incidentSummary.slice(0, 6)} />
         <ReportsTimeline />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+        <Card className="rounded-[30px] border border-border/70 bg-card/82">
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold">Contexto reciente</h3>
+            <div className="grid gap-3">
+              <div className="rounded-[22px] border border-border/60 bg-background/55 p-4">
+                <p className="text-sm text-muted-foreground">Vista favorita</p>
+                <p className="mt-2 font-semibold">{preferences?.favoriteView ?? "/app/dashboard"}</p>
+              </div>
+              <div className="rounded-[22px] border border-border/60 bg-background/55 p-4">
+                <p className="text-sm text-muted-foreground">Ultima ruta</p>
+                <p className="mt-2 font-semibold">{preferences?.lastVisitedRoute ?? "/app/dashboard"}</p>
+              </div>
+              <div className="rounded-[22px] border border-border/60 bg-background/55 p-4">
+                <p className="text-sm text-muted-foreground">Clientes recientes</p>
+                <p className="mt-2 font-semibold">
+                  {preferences?.recentClients?.length ? preferences.recentClients.slice(0, 3).join(" · ") : "Sin recientes"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="rounded-[30px] border border-border/70 bg-card/82">
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold">Actividad reciente</h3>
+            <div className="grid gap-3">
+              {recentActivity.length ? (
+                recentActivity.slice(0, 4).map((item) => (
+                  <div key={item.id} className="rounded-[22px] border border-border/60 bg-background/55 p-4">
+                    <p className="font-semibold">{item.title}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-[22px] border border-dashed border-border/60 bg-background/40 p-4 text-sm text-muted-foreground">
+                  Aun no hay actividad persistida en esta sesion.
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-3">

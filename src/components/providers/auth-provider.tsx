@@ -6,6 +6,7 @@ import { currentUser, teamMembers } from "@/data/demo";
 import { Role, User } from "@/types";
 import { getAuthCallbackUrl, isSupabaseConfigured } from "@/lib/env";
 import { getAvatarLabel, resolveUserRole } from "@/lib/auth/roles";
+import { loginInputSchema, normalizeEmail, normalizeText, registerInputSchema } from "@/lib/auth/validation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const USERS_STORAGE_KEY = "portal-incidencias-auth-users";
@@ -69,7 +70,23 @@ function toPublicUser(user: StoredAuthUser): User {
 }
 
 function createUserId() {
-  return `u-${Math.random().toString(36).slice(2, 10)}`;
+  return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `u-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function dedupeUsers(items: StoredAuthUser[]) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const normalizedEmail = normalizeEmail(item.email);
+    if (seen.has(normalizedEmail)) {
+      return false;
+    }
+
+    seen.add(normalizedEmail);
+    item.email = normalizedEmail;
+    item.name = normalizeText(item.name);
+    item.company = item.company ? normalizeText(item.company) : item.company;
+    return true;
+  });
 }
 
 function mapSupabaseUser(user: SupabaseUser): User {
@@ -144,13 +161,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const savedSession = window.localStorage.getItem(SESSION_STORAGE_KEY);
 
       if (savedUsers) {
-        const parsedUsers = JSON.parse(savedUsers) as StoredAuthUser[];
+        const parsedUsers = dedupeUsers(JSON.parse(savedUsers) as StoredAuthUser[]);
         if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
           setUsers(parsedUsers);
         }
       }
 
-      const availableUsers = savedUsers ? (JSON.parse(savedUsers) as StoredAuthUser[]) : seedUsers;
+      const availableUsers = savedUsers ? dedupeUsers(JSON.parse(savedUsers) as StoredAuthUser[]) : seedUsers;
 
       if (savedSession) {
         const sessionUser = availableUsers.find((item) => item.id === savedSession);
@@ -178,7 +195,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { ok: false, message: "Usa el acceso con Google para esta instalacion." };
         }
 
-        const foundUser = users.find((item) => item.email.toLowerCase() === email.trim().toLowerCase());
+        const parsed = loginInputSchema.safeParse({ email, password });
+        if (!parsed.success) {
+          return { ok: false, message: parsed.error.issues[0]?.message ?? "No se pudo validar el acceso." };
+        }
+
+        const normalizedEmail = normalizeEmail(parsed.data.email);
+        const foundUser = users.find((item) => normalizeEmail(item.email) === normalizedEmail);
 
         if (!foundUser || foundUser.password !== password) {
           return { ok: false, message: "Correo o contrasena incorrectos." };
@@ -218,20 +241,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { ok: false, message: "El alta manual queda desactivada cuando usas autenticacion cloud." };
         }
 
-        const normalizedEmail = email.trim().toLowerCase();
+        const parsed = registerInputSchema.safeParse({ name, email, password, company });
+        if (!parsed.success) {
+          return { ok: false, message: parsed.error.issues[0]?.message ?? "No se pudo validar el alta." };
+        }
 
-        if (users.some((item) => item.email.toLowerCase() === normalizedEmail)) {
+        const normalizedEmail = normalizeEmail(parsed.data.email);
+        const normalizedName = normalizeText(parsed.data.name);
+        const normalizedCompany = parsed.data.company ? normalizeText(parsed.data.company) : undefined;
+
+        if (users.some((item) => normalizeEmail(item.email) === normalizedEmail)) {
           return { ok: false, message: "Ya existe una cuenta registrada con ese correo." };
         }
 
         const createdUser: StoredAuthUser = {
           id: createUserId(),
-          name: name.trim(),
+          name: normalizedName,
           email: normalizedEmail,
           role,
-          avatar: getAvatarLabel(name, email),
-          company: company?.trim(),
-          password,
+          avatar: getAvatarLabel(normalizedName, normalizedEmail),
+          company: normalizedCompany,
+          password: parsed.data.password,
           authSource: "local"
         };
 
