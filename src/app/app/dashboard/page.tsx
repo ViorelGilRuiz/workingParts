@@ -152,6 +152,47 @@ export default function DashboardPage() {
         </Card>
       </section>
 
+      <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        <Card className="relative overflow-hidden rounded-[34px] border border-border/70 bg-card/88 p-6">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.09),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(45,212,191,0.06),transparent_22%)]" />
+          <div className="relative space-y-5">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+              <Sparkles className="h-3.5 w-3.5" />
+              Ejecutivo
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {[
+                ["Media de resolucion", `${analytics.averageResolutionHours.toFixed(1)} h`],
+                ["Tecnico top", analytics.topTechnicians[0]?.name ?? "Sin datos"],
+                ["Cliente mas activo", analytics.clientSummaries[0]?.name ?? "Sin datos"]
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-[24px] border border-border/60 bg-background/55 p-4">
+                  <p className="text-sm text-muted-foreground">{label}</p>
+                  <p className="mt-3 text-xl font-bold">{value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+
+        <Card className="rounded-[34px] border border-border/70 bg-card/88 p-6">
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold">Actividad prioritaria</h3>
+            {analytics.clientSummaries.slice(0, 3).map((item) => (
+              <div key={item.clientId} className="flex items-center justify-between rounded-[22px] border border-border/60 bg-background/55 px-4 py-4">
+                <div>
+                  <p className="font-semibold">{item.name}</p>
+                  <p className="text-sm text-muted-foreground">{item.reports} partes · {item.hours.toFixed(1)} h</p>
+                </div>
+                <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                  {item.repeatedIssues} repetidas
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </section>
+
       <section className="grid gap-4 xl:grid-cols-[1fr_0.95fr]">
         <IncidentChart data={analytics.incidentSummary.slice(0, 6)} />
         <ReportsTimeline />

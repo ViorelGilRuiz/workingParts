@@ -12,7 +12,8 @@ export function AppShell({
   const pathname = usePathname();
 
   return (
-    <div className="app-shell-background min-h-screen p-3 lg:p-6">
+    <div className="app-shell-background relative min-h-screen overflow-hidden p-3 lg:p-6">
+      <div className="pointer-events-none absolute inset-0 hero-mesh opacity-20" />
       <div className="mx-auto grid max-w-[1680px] gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
         <div className="lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)]">
           <Sidebar />
