@@ -17,7 +17,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggleTheme } = useAppTheme();
-  const { user, logout, isCloudAuthEnabled } = useAuth();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     const prefetchTargets = navigation.map((item) => item.href).filter((href) => href !== pathname).slice(0, 6);
@@ -81,11 +81,8 @@ export function Sidebar() {
               <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${currentRole.chip}`}>
                 {currentRole.label}
               </span>
-              <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                {isCloudAuthEnabled ? "cloud" : "local"}
-              </span>
-            </div>
-          </div>
+                </div>
+              </div>
         </div>
 
         <div className="mt-4 flex gap-2">
@@ -145,11 +142,8 @@ export function Sidebar() {
       <div className="mt-6 rounded-[30px] border border-border/60 bg-background/55 p-4 lg:mt-auto">
         <div className="inline-flex items-center gap-2 rounded-full bg-primary/8 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
           <Sparkles className="h-3.5 w-3.5" />
-          Working mode
+          WorkingParts
         </div>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Interfaz limpia, navegación rápida y base lista para crecer.
-        </p>
       </div>
     </aside>
   );

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect } from "react";
-import { Download, FileSpreadsheet, FileText, MonitorCog, Network, Printer, Sparkles, Timer } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, MonitorCog, Network, Printer } from "lucide-react";
 import { useReports } from "@/components/providers/reports-provider";
 import { buildExcelWorkbook, buildPdfSummary, IBERSOFT_BRAND } from "@/lib/exports";
 import { Topbar } from "@/components/layout/topbar";
@@ -89,28 +89,23 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <Topbar
-        title="Tickets y partes"
-        subtitle="Registro limpio para tecnicos, seguimiento del jefe y facturacion premium"
-      />
+      <Topbar title="Tickets" />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card className="relative overflow-hidden">
           <div className="absolute right-0 top-0 h-20 w-20 rounded-full bg-primary/10 blur-3xl" />
           <p className="text-sm text-muted-foreground">Tickets abiertos</p>
           <p className="mt-3 text-3xl font-extrabold">{analytics.pendingReports}</p>
-          <p className="mt-2 text-sm text-muted-foreground">Pendientes o en seguimiento</p>
         </Card>
         <Card className="relative overflow-hidden">
           <div className="absolute right-0 top-0 h-20 w-20 rounded-full bg-secondary/10 blur-3xl" />
           <p className="text-sm text-muted-foreground">Horas del mes</p>
           <p className="mt-3 text-3xl font-extrabold">{analytics.monthHours.toFixed(1)} h</p>
-          <p className="mt-2 text-sm text-muted-foreground">Dedicacion total registrada</p>
         </Card>
         <Card className="relative overflow-hidden">
           <p className="text-sm text-muted-foreground">Facturacion estimada</p>
           <p className="mt-3 text-2xl font-extrabold">{estimatedBilling.toFixed(0)} EUR</p>
-          <p className="mt-2 text-sm text-muted-foreground">{IBERSOFT_BRAND.hourlyRate} EUR/h con mantenimiento incluido</p>
+          <p className="mt-2 text-sm text-muted-foreground">{IBERSOFT_BRAND.hourlyRate} EUR/h</p>
         </Card>
         <Card className="flex flex-col justify-between">
           <div>
@@ -133,23 +128,6 @@ export default function ReportsPage() {
           </div>
         </Card>
       </section>
-
-      <Card className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">Experiencia de uso</p>
-          <h3 className="text-xl font-bold">Panel premium para cargar trabajo sin friccion</h3>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <div className="inline-flex items-center gap-2 rounded-2xl bg-muted/60 px-4 py-2 text-sm">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Flujo visual premium
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-2xl bg-muted/60 px-4 py-2 text-sm">
-            <Timer className="h-4 w-4 text-primary" />
-            Registro rapido y claro
-          </div>
-        </div>
-      </Card>
 
       <section className="grid gap-4 xl:grid-cols-3">
         {ticketTemplates.map((template) => (

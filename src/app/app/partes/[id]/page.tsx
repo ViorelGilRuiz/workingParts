@@ -139,7 +139,7 @@ export default function ReportDetailPage() {
   if (!hydrated) {
     return (
       <div className="space-y-6">
-        <Topbar title="Cargando parte..." subtitle="Recuperando la intervencion seleccionada" />
+        <Topbar title="Cargando" />
       </div>
     );
   }
@@ -147,7 +147,7 @@ export default function ReportDetailPage() {
   if (!report) {
     return (
       <div className="space-y-6">
-        <Topbar title="Parte no encontrado" subtitle="No hemos localizado ese identificador en el entorno actual" />
+        <Topbar title="Parte no encontrado" />
         <Card className="space-y-4">
           <p className="text-sm text-muted-foreground">
             Puede que el parte pertenezca a otra sesion del navegador o que haya sido eliminado de la demo local.
@@ -162,7 +162,7 @@ export default function ReportDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Topbar title={`Parte ${report.id}`} subtitle="Detalle operativo, conformidad de cliente y factura firmable" />
+      <Topbar title={`Parte ${report.id}`} />
 
       <section className="grid gap-4 md:grid-cols-4">
         <Card>

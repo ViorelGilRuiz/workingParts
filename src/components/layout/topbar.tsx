@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useDeferredValue, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeft, Download, LogOut, Search, SlidersHorizontal, Sparkles, X } from "lucide-react";
+import { ArrowLeft, Download, LogOut, Search, SlidersHorizontal, X } from "lucide-react";
 import { quickFilters, roleMeta } from "@/lib/constants";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -20,10 +20,10 @@ const quickFilterMap: Record<string, string> = {
   Facturable: "factura"
 };
 
-export function Topbar({ title, subtitle }: { title: string; subtitle: string }) {
+export function Topbar({ title, subtitle }: { title: string; subtitle?: string }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isCloudAuthEnabled, logout } = useAuth();
+  const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [showPresetFilters, setShowPresetFilters] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
@@ -34,10 +34,10 @@ export function Topbar({ title, subtitle }: { title: string; subtitle: string })
 
   const quickSummary = useMemo(() => {
     if (!deferredQuery.trim()) {
-      return subtitle;
+      return subtitle ?? "";
     }
 
-    return `Filtro activo · ${deferredQuery}`;
+    return `Filtro · ${deferredQuery}`;
   }, [deferredQuery, subtitle]);
 
   const handleMarkAsRead = (id: string) => {
@@ -68,11 +68,8 @@ export function Topbar({ title, subtitle }: { title: string; subtitle: string })
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
         <div className="space-y-4">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/12 bg-primary/8 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-              <Sparkles className="h-3.5 w-3.5" />
-              {quickSummary}
-            </div>
             <h2 className="text-3xl font-extrabold tracking-tight lg:text-4xl">{title}</h2>
+            {quickSummary ? <p className="text-sm text-muted-foreground">{quickSummary}</p> : null}
           </div>
 
           <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
@@ -80,7 +77,7 @@ export function Topbar({ title, subtitle }: { title: string; subtitle: string })
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="h-12 rounded-2xl border-border/70 bg-background/72 pl-11 pr-10"
-                placeholder="Buscar..."
+                placeholder="Buscar"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
               />
@@ -133,9 +130,6 @@ export function Topbar({ title, subtitle }: { title: string; subtitle: string })
                   <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${roleInfo.chip}`}>
                     {roleInfo.label}
                   </span>
-                  <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                    {isCloudAuthEnabled ? "cloud auth" : "local mode"}
-                  </span>
                 </div>
               </div>
 
@@ -149,10 +143,10 @@ export function Topbar({ title, subtitle }: { title: string; subtitle: string })
               Exportar
             </Button>
             <Button variant="outline" asChild className="flex-1">
-              <Link href="/app/perfil">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Perfil
-              </Link>
+                  <Link href="/app/perfil">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Perfil
+                  </Link>
             </Button>
             <Button variant="outline" type="button" onClick={handleLogout} className="flex-1">
               <LogOut className="mr-2 h-4 w-4" />

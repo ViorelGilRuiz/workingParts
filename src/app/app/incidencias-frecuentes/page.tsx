@@ -11,10 +11,7 @@ export default function FrequentIncidentsPage() {
 
   return (
     <div className="space-y-6">
-      <Topbar
-        title="Incidencias frecuentes"
-        subtitle="Deteccion de patrones, recurrencia por categoria y oportunidades de mejora preventiva"
-      />
+      <Topbar title="Patrones" />
 
       <div className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
         <Card className="space-y-4">

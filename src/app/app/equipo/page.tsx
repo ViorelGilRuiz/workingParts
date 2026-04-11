@@ -31,7 +31,7 @@ export default function TeamPage() {
 
   return (
     <div className="space-y-6">
-      <Topbar title="Equipo" subtitle="Seguimiento del equipo" />
+      <Topbar title="Equipo" />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card>

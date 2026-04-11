@@ -13,40 +13,32 @@ export default function MonthlySummaryPage() {
 
   return (
     <div className="space-y-6">
-      <Topbar
-        title="Resumen mensual"
-        subtitle="Vista ejecutiva premium para direccion: volumen, horas, facturacion y validacion"
-      />
+      <Topbar title="Resumen mensual" />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card>
           <p className="text-sm text-muted-foreground">Facturacion estimada</p>
           <p className="mt-3 text-3xl font-extrabold">{formatCurrency(estimatedBilling)}</p>
-          <p className="mt-2 text-sm text-muted-foreground">Importe acumulado segun horas registradas</p>
         </Card>
         <Card>
           <p className="text-sm text-muted-foreground">Horas del mes</p>
           <p className="mt-3 text-3xl font-extrabold">{analytics.monthHours.toFixed(1)} h</p>
-          <p className="mt-2 text-sm text-muted-foreground">Trabajo consolidado en el periodo actual</p>
         </Card>
         <Card>
           <p className="text-sm text-muted-foreground">Partes firmados</p>
           <p className="mt-3 text-3xl font-extrabold">{signedCount}</p>
-          <p className="mt-2 text-sm text-muted-foreground">Listos para justificar servicio y cobro</p>
         </Card>
         <Card>
           <p className="text-sm text-muted-foreground">Repetitivas</p>
           <p className="mt-3 text-3xl font-extrabold">
             {analytics.clientSummaries.reduce((sum, client) => sum + client.repeatedIssues, 0)}
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">Oportunidad directa de mejora preventiva</p>
         </Card>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
         <Card>
-          <p className="text-sm text-muted-foreground">Detalle mensual</p>
-          <h3 className="text-xl font-bold">Comparativa del historico disponible</h3>
+          <h3 className="text-xl font-bold">Historico</h3>
           <div className="mt-6 overflow-x-auto">
             {analytics.monthlySummary.length === 0 ? (
               <div className="rounded-[24px] border border-dashed border-border/70 p-5 text-sm text-muted-foreground">
@@ -79,28 +71,27 @@ export default function MonthlySummaryPage() {
         </Card>
 
         <Card>
-          <p className="text-sm text-muted-foreground">Lectura para gerencia</p>
-          <h3 className="text-xl font-bold">Indicadores premium</h3>
+          <h3 className="text-xl font-bold">Indicadores</h3>
           <div className="mt-6 space-y-4">
             {[
               {
                 icon: TrendingUp,
-                title: "Rentabilidad visible",
+                title: "Rentabilidad",
                 text: "Cada hora registrada impacta directamente en la lectura de facturacion del mes."
               },
               {
                 icon: Receipt,
-                title: "Documentacion preparada",
+                title: "Documentacion",
                 text: "Los partes firmados se convierten en base documental para justificar cada factura."
               },
               {
                 icon: ShieldCheck,
-                title: "Trazabilidad premium",
+                title: "Trazabilidad",
                 text: "Direccion puede revisar lo que hace el tecnico y que cliente ha validado el servicio."
               },
               {
                 icon: BarChart3,
-                title: "Decision mas rapida",
+                title: "Decision",
                 text: "La foto mensual deja claro donde hay mas carga, repeticion e ingreso."
               }
             ].map((item) => (

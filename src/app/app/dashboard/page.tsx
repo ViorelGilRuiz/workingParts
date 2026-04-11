@@ -74,7 +74,7 @@ export default function DashboardPage() {
   if (reports.length === 0 && clients.length === 0) {
     return (
       <div className="space-y-6">
-        <Topbar title="Dashboard" subtitle="Centro de control" />
+        <Topbar title="Dashboard" />
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {dashboardKpis.map((item) => (
@@ -126,7 +126,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <Topbar title="Dashboard" subtitle="Vision operativa" />
+      <Topbar title="Dashboard" />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {dashboardKpis.map((item) => (

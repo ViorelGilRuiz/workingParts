@@ -9,13 +9,13 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "WorkingParts | Ibersoft Portal IT",
-  description: "Portal profesional para tickets, partes tecnicos, clientes, supervision y facturacion ligera de Ibersoft.",
+  title: "WorkingParts",
+  description: "Plataforma operativa para tickets, clientes, actividad tecnica y seguimiento empresarial.",
   applicationName: "WorkingParts",
-  keywords: ["workingparts", "ibersoft", "tickets", "partes tecnicos", "soporte IT", "facturacion"],
+  keywords: ["workingparts", "tickets", "operaciones", "soporte IT", "clientes", "reporting"],
   openGraph: {
     title: "WorkingParts",
-    description: "Portal premium para servicio tecnico, clientes y partes de trabajo.",
+    description: "Plataforma operativa para tickets, clientes, actividad tecnica y seguimiento empresarial.",
     type: "website"
   }
 };

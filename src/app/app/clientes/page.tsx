@@ -55,10 +55,7 @@ export default function ClientsPage() {
 
   return (
     <div className="space-y-6">
-      <Topbar
-        title="Clientes"
-        subtitle="Alta manual, cartera limpia y seguimiento elegante para Ibersoft"
-      />
+      <Topbar title="Clientes" />
 
       <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <Card className="space-y-5">

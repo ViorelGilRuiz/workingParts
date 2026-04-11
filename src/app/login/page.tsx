@@ -35,6 +35,7 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
   const { user, hydrated, login, loginWithGoogle, register, isCloudAuthEnabled } = useAuth();
   const nextPath = searchParams.get("next") || "/app/dashboard";
+  const oauthError = searchParams.get("error");
 
   const [mode, setMode] = useState<AuthMode>("login");
   const [message, setMessage] = useState("");
@@ -67,7 +68,20 @@ function LoginPageContent() {
     router.prefetch("/app/perfil");
   }, [hydrated, nextPath, router]);
 
-  const authBadge = useMemo(() => (isCloudAuthEnabled ? "Cloud auth" : "Local mode"), [isCloudAuthEnabled]);
+  useEffect(() => {
+    if (!oauthError) return;
+
+    if (oauthError === "oauth_callback_failed") {
+      setError("No se pudo completar el acceso con Google.");
+      return;
+    }
+
+    if (oauthError === "missing_oauth_code") {
+      setError("El flujo de acceso no devolvio un codigo valido.");
+    }
+  }, [oauthError]);
+
+  const authBadge = useMemo(() => (isCloudAuthEnabled ? "Google" : "Local"), [isCloudAuthEnabled]);
 
   const runLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -175,9 +189,7 @@ function LoginPageContent() {
                 <h1 className="text-5xl font-extrabold tracking-[-0.06em] lg:text-7xl">
                   Acceso limpio para una operativa técnica seria.
                 </h1>
-                <p className="max-w-xl text-lg leading-8 text-slate-300">
-                  Minimalismo, sesión segura y una entrada más propia de producto que de demo.
-                </p>
+                <p className="max-w-xl text-lg leading-8 text-slate-300">Acceso seguro para equipos operativos.</p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
@@ -205,7 +217,7 @@ function LoginPageContent() {
                       <div className="rounded-2xl bg-sky-400/12 p-3 text-sky-300">
                         <ShieldCheck className="h-5 w-5" />
                       </div>
-                      <p className="text-sm text-slate-300">Entrada reducida, limpia y preparada para flujo cloud.</p>
+                      <p className="text-sm text-slate-300">Autenticación preparada para entorno profesional.</p>
                     </div>
                   </div>
                 </div>
@@ -239,6 +251,9 @@ function LoginPageContent() {
                 <GoogleIcon />
                 <span className="ml-2">Continuar con Google</span>
               </Button>
+              {!isCloudAuthEnabled ? (
+                <p className="text-sm text-muted-foreground">Configura Supabase para activar Google.</p>
+              ) : null}
             </Card>
 
             {!isCloudAuthEnabled ? (
@@ -418,7 +433,7 @@ function LoginPageContent() {
               <Link href="/" className="font-semibold text-primary">
                 Volver
               </Link>
-              <span>{authBadge}</span>
+              <span />
             </div>
           </div>
         </motion.section>

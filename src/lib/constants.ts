@@ -18,14 +18,14 @@ import {
 } from "lucide-react";
 
 export const navigation = [
-  { href: "/app/dashboard", label: "Dashboard", description: "Vision general y actividad", icon: LayoutDashboard },
-  { href: "/app/partes", label: "Tickets y partes", description: "Crear, editar y seguir trabajo", icon: ClipboardList },
-  { href: "/app/clientes", label: "Clientes", description: "Alta manual y cartera", icon: Building2 },
-  { href: "/app/resumen-mensual", label: "Resumen mensual", description: "Horas, firmas y facturacion", icon: Gauge },
-  { href: "/app/incidencias-frecuentes", label: "Patrones", description: "Historico y recurrencia", icon: BriefcaseBusiness },
-  { href: "/app/equipo", label: "Equipo", description: "Carga y supervision", icon: Users },
-  { href: "/app/perfil", label: "Perfil", description: "Sesion, rol y actividad", icon: BadgeCheck },
-  { href: "/app/admin", label: "Administracion", description: "Control y crecimiento", icon: ShieldCheck }
+  { href: "/app/dashboard", label: "Dashboard", description: "", icon: LayoutDashboard },
+  { href: "/app/partes", label: "Tickets", description: "", icon: ClipboardList },
+  { href: "/app/clientes", label: "Clientes", description: "", icon: Building2 },
+  { href: "/app/resumen-mensual", label: "Resumen", description: "", icon: Gauge },
+  { href: "/app/incidencias-frecuentes", label: "Patrones", description: "", icon: BriefcaseBusiness },
+  { href: "/app/equipo", label: "Equipo", description: "", icon: Users },
+  { href: "/app/perfil", label: "Perfil", description: "", icon: BadgeCheck },
+  { href: "/app/admin", label: "Admin", description: "", icon: ShieldCheck }
 ];
 
 export const roleMeta = {

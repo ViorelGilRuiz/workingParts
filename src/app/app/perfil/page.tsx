@@ -38,7 +38,7 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <Topbar title="Perfil" subtitle="Sesion, rol y seguimiento" />
+      <Topbar title="Perfil" />
 
       <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <Card className="relative overflow-hidden rounded-[34px] border border-border/70 bg-card/88 p-6">
@@ -55,7 +55,7 @@ export default function ProfilePage() {
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge className={activeRole.chip}>{activeRole.label}</Badge>
-                  <Badge className="bg-muted text-muted-foreground">{isCloudAuthEnabled ? "Cloud auth" : "Local mode"}</Badge>
+                  <Badge className="bg-muted text-muted-foreground">{isCloudAuthEnabled ? "Google" : "Local"}</Badge>
                 </div>
                 <h1 className="mt-3 text-3xl font-extrabold tracking-tight">{user?.name ?? "Usuario"}</h1>
                 <p className="mt-1 text-sm text-muted-foreground">{user?.email ?? "Sin correo"}</p>
