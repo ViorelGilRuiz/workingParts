@@ -27,6 +27,9 @@ function formatSignedDate(value: string | null) {
 export async function buildExcelWorkbook(data: WorkReport[]) {
   const ExcelJS = (await import("exceljs")).default;
   const workbook = new ExcelJS.Workbook();
+  workbook.creator = IBERSOFT_BRAND.name;
+  workbook.subject = "Resumen de partes tecnicos";
+
   const sheet = workbook.addWorksheet("Partes");
 
   sheet.columns = [
@@ -47,19 +50,83 @@ export async function buildExcelWorkbook(data: WorkReport[]) {
     })
   );
 
+  const header = sheet.getRow(1);
+  header.font = { bold: true, color: { argb: "FFF8FAFC" } };
+  header.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF0F172A" }
+  };
+  header.alignment = { vertical: "middle", horizontal: "center" };
+  header.height = 24;
+
+  sheet.eachRow((row, index) => {
+    if (index === 1) return;
+    row.height = 20;
+    row.alignment = { vertical: "middle" };
+
+    if (index % 2 === 0) {
+      row.eachCell((cell) => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFF8FAFC" }
+        };
+      });
+    }
+  });
+
   return workbook;
 }
 
 export async function buildPdfSummary(data: WorkReport[]) {
   const jsPDF = (await import("jspdf")).default;
   const pdf = new jsPDF();
-  pdf.setFontSize(18);
-  pdf.text(`${IBERSOFT_BRAND.name} · Resumen de partes`, 14, 18);
-  pdf.setFontSize(11);
+  const totalHours = data.reduce((sum, report) => sum + report.durationHours, 0);
+  const totalBilling = data.reduce((sum, report) => sum + report.durationHours * report.hourlyRate, 0);
 
-  data.slice(0, 8).forEach((report, index) => {
+  pdf.setFillColor(15, 23, 42);
+  pdf.rect(0, 0, 210, 34, "F");
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(22);
+  pdf.text(IBERSOFT_BRAND.name, 14, 18);
+  pdf.setFontSize(10);
+  pdf.text("Resumen ejecutivo de partes", 14, 26);
+
+  [
+    ["Partes", `${data.length}`],
+    ["Horas", `${totalHours.toFixed(1)} h`],
+    ["Facturacion", formatCurrency(totalBilling)]
+  ].forEach(([label, value], index) => {
+    const x = 14 + index * 62;
+    pdf.setDrawColor(226, 232, 240);
+    pdf.roundedRect(x, 46, 56, 24, 4, 4);
+    pdf.setTextColor(100, 116, 139);
+    pdf.setFontSize(10);
+    pdf.text(label, x + 4, 55);
+    pdf.setTextColor(20, 23, 28);
+    pdf.setFontSize(13);
+    pdf.text(value, x + 4, 65);
+  });
+
+  pdf.setFontSize(10);
+  pdf.setTextColor(100, 116, 139);
+  pdf.text("Parte", 14, 84);
+  pdf.text("Cliente", 44, 84);
+  pdf.text("Categoria", 98, 84);
+  pdf.text("Horas", 150, 84);
+  pdf.text("Importe", 178, 84);
+  pdf.line(14, 88, 196, 88);
+
+  data.slice(0, 10).forEach((report, index) => {
+    const y = 98 + index * 10;
     const total = formatCurrency(report.durationHours * report.hourlyRate);
-    pdf.text(`${report.id} · ${report.client} · ${report.category} · ${report.durationHours}h · ${total}`, 14, 34 + index * 10);
+    pdf.setTextColor(20, 23, 28);
+    pdf.text(report.id, 14, y);
+    pdf.text(report.client.slice(0, 24), 44, y);
+    pdf.text(report.category.slice(0, 22), 98, y);
+    pdf.text(`${report.durationHours.toFixed(1)} h`, 150, y);
+    pdf.text(total, 196, y, { align: "right" });
   });
 
   return pdf;

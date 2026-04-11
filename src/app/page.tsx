@@ -1,106 +1,110 @@
 import Link from "next/link";
-import { ArrowRight, BarChart3, ClipboardList, ShieldCheck, Sparkles, Users2 } from "lucide-react";
+import { ArrowRight, Orbit, ShieldCheck, Sparkles, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { SectionHeading } from "@/components/shared/section-heading";
 
-const featureCards = [
-  {
-    icon: ClipboardList,
-    title: "Tickets impecables",
-    text: "Formulario rapido, partes elegantes, PDF tipo factura y firma digital del cliente."
-  },
-  {
-    icon: BarChart3,
-    title: "Direccion con contexto",
-    text: "Paneles ejecutivos, historico visual, resumen mensual y patrones de incidencias."
-  },
-  {
-    icon: Users2,
-    title: "Clientes bien organizados",
-    text: "Base de clientes desde cero, sin datos demo, preparada para crecer contigo."
-  },
-  {
-    icon: ShieldCheck,
-    title: "Estructura para empresa",
-    text: "Roles, flujo de trabajo claro y base preparada para conectar backend real mas adelante."
-  }
-];
+const featurePills = ["tickets", "clientes", "firmas", "pdf", "seguimiento"];
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen px-4 py-6 lg:px-8">
-      <div className="mx-auto max-w-[1480px] space-y-10">
-        <header className="rounded-[36px] border border-border/60 bg-card/80 p-6 shadow-soft backdrop-blur lg:p-10">
-          <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-            <div className="max-w-3xl space-y-5">
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+    <main className="relative min-h-screen overflow-hidden px-4 py-6 lg:px-8 lg:py-8">
+      <div className="pointer-events-none absolute inset-0 tech-depth-grid opacity-50" />
+      <div className="pointer-events-none absolute inset-0">
+        <div className="hero-orb hero-orb-a" />
+        <div className="hero-orb hero-orb-b" />
+        <div className="hero-orb hero-orb-c" />
+        <div className="tech-ring tech-ring-a" />
+        <div className="tech-ring tech-ring-b" />
+      </div>
+
+      <div className="relative mx-auto flex max-w-[1460px] flex-col gap-8">
+        <section className="overflow-hidden rounded-[40px] border border-border/70 bg-card/82 p-6 shadow-soft backdrop-blur lg:p-10">
+          <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+            <div className="max-w-3xl space-y-7">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/12 bg-primary/8 px-4 py-2 text-sm font-semibold text-primary">
                 <Sparkles className="h-4 w-4" />
-                Portal minimalista para soporte IT
+                WorkingParts
               </div>
-              <h1 className="text-5xl font-extrabold tracking-tight lg:text-7xl">
-                Tickets, clientes y supervision con una interfaz premium y limpia.
-              </h1>
-              <p className="max-w-2xl text-lg text-muted-foreground">
-                Ibersoft Portal IT nace para que el tecnico trabaje rapido, el jefe lo controle todo con claridad y la
-                facturacion salga lista con firma y estilo profesional.
-              </p>
+
+              <div className="space-y-5">
+                <h1 className="max-w-4xl text-5xl font-extrabold tracking-[-0.06em] lg:text-7xl">
+                  Operativa técnica con estética limpia y control real.
+                </h1>
+                <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
+                  Un portal minimalista para registrar trabajo, organizar clientes y supervisar actividad sin ruido visual.
+                </p>
+              </div>
+
               <div className="flex flex-wrap gap-3">
                 <Button asChild size="lg">
                   <Link href="/login">
-                    Entrar al portal
+                    Entrar
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="lg">
-                  <Link href="/login">Acceso seguro</Link>
+                <Button asChild size="lg" variant="outline">
+                  <Link href="/app/dashboard">Dashboard</Link>
                 </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {featurePills.map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-border/60 bg-background/55 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground"
+                  >
+                    {item}
+                  </span>
+                ))}
               </div>
             </div>
 
-            <Card className="grid gap-4 bg-gradient-to-br from-primary/10 via-card to-secondary/10">
-              {[
-                ["Base limpia", "Sin clientes ni tickets de ejemplo"],
-                ["Menu grande", "Acceso claro a toda la operativa"],
-                ["PDF premium", "Parte factura con firma digital"],
-                ["Escalable", "Preparado para backend real"]
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-border/50 bg-background/60 p-4">
-                  <p className="text-sm text-muted-foreground">{label}</p>
-                  <p className="mt-2 text-xl font-extrabold">{value}</p>
+            <div className="relative mx-auto w-full max-w-[560px] perspective-[1800px]">
+              <div className="hero-tilt-panel relative rounded-[34px] border border-white/10 bg-slate-950/88 p-5 text-white shadow-[0_40px_120px_rgba(15,23,42,0.45)]">
+                <div className="absolute inset-0 rounded-[34px] bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.18),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(45,212,191,0.16),transparent_22%)]" />
+                <div className="relative space-y-4">
+                  <div className="flex items-center justify-between rounded-[26px] border border-white/10 bg-white/5 px-4 py-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Session</p>
+                      <p className="mt-1 text-lg font-semibold">Minimal control</p>
+                    </div>
+                    <div className="rounded-2xl bg-sky-400/12 p-3 text-sky-300">
+                      <Orbit className="h-5 w-5" />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-[26px] border border-white/8 bg-white/5 p-4">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Flow</p>
+                      <p className="mt-3 text-xl font-bold">Tickets</p>
+                    </div>
+                    <div className="rounded-[26px] border border-white/8 bg-white/5 p-4">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Ops</p>
+                      <p className="mt-3 text-xl font-bold">Clientes</p>
+                    </div>
+                    <div className="rounded-[26px] border border-white/8 bg-white/5 p-4">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Proof</p>
+                      <p className="mt-3 text-xl font-bold">Firmas</p>
+                    </div>
+                    <div className="rounded-[26px] border border-white/8 bg-white/5 p-4">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Export</p>
+                      <p className="mt-3 text-xl font-bold">PDF / Excel</p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-[24px] bg-white/5 p-4">
+                      <Workflow className="h-5 w-5 text-sky-300" />
+                    </div>
+                    <div className="rounded-[24px] bg-white/5 p-4">
+                      <ShieldCheck className="h-5 w-5 text-emerald-300" />
+                    </div>
+                    <div className="rounded-[24px] bg-white/5 p-4">
+                      <Sparkles className="h-5 w-5 text-amber-300" />
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </Card>
-          </div>
-        </header>
-
-        <section className="grid gap-4 lg:grid-cols-4">
-          {featureCards.map((item) => (
-            <Card key={item.title}>
-              <item.icon className="h-10 w-10 text-primary" />
-              <h2 className="mt-5 text-xl font-bold">{item.title}</h2>
-              <p className="mt-3 text-muted-foreground">{item.text}</p>
-            </Card>
-          ))}
-        </section>
-
-        <section className="space-y-6">
-          <SectionHeading
-            eyebrow="Flujo de trabajo"
-            title="Una operativa mas ordenada de principio a fin"
-            description="Todo queda pensado para que el tecnico registre rapido, el cliente firme y la direccion consulte con contexto."
-          />
-          <div className="grid gap-4 lg:grid-cols-3">
-            {[
-              ["1. Crear clientes", "Alta manual sin datos de prueba para arrancar con una cartera real."],
-              ["2. Registrar tickets", "Plantillas, tiempos, firma y exportacion PDF para cada parte."],
-              ["3. Supervisar y facturar", "Historico, paneles y base premium para seguimiento y cobro."]
-            ].map(([title, text]) => (
-              <Card key={title}>
-                <h3 className="text-lg font-bold">{title}</h3>
-                <p className="mt-3 text-muted-foreground">{text}</p>
-              </Card>
-            ))}
+              </div>
+            </div>
           </div>
         </section>
       </div>

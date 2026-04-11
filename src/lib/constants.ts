@@ -1,4 +1,5 @@
 import {
+  BadgeCheck,
   BriefcaseBusiness,
   Building2,
   ClipboardList,
@@ -23,8 +24,27 @@ export const navigation = [
   { href: "/app/resumen-mensual", label: "Resumen mensual", description: "Horas, firmas y facturacion", icon: Gauge },
   { href: "/app/incidencias-frecuentes", label: "Patrones", description: "Historico y recurrencia", icon: BriefcaseBusiness },
   { href: "/app/equipo", label: "Equipo", description: "Carga y supervision", icon: Users },
+  { href: "/app/perfil", label: "Perfil", description: "Sesion, rol y actividad", icon: BadgeCheck },
   { href: "/app/admin", label: "Administracion", description: "Control y crecimiento", icon: ShieldCheck }
 ];
+
+export const roleMeta = {
+  technician: {
+    label: "Tecnico",
+    accent: "from-sky-400/25 via-cyan-400/12 to-transparent",
+    chip: "bg-sky-500/10 text-sky-300"
+  },
+  supervisor: {
+    label: "Supervisor",
+    accent: "from-emerald-400/25 via-teal-400/12 to-transparent",
+    chip: "bg-emerald-500/10 text-emerald-300"
+  },
+  admin: {
+    label: "Administrador",
+    accent: "from-amber-400/25 via-orange-400/12 to-transparent",
+    chip: "bg-amber-500/10 text-amber-300"
+  }
+} as const;
 
 export const statusStyles: Record<string, string> = {
   Resuelto: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
@@ -119,4 +139,4 @@ export const loginTechIcons = [
   { icon: LockKeyhole, label: "security" }
 ] as const;
 
-export const quickFilters = ["Hoy", "Esta semana", "Pendientes", "Facturable", "Cliente"];
+export const quickFilters = ["Hoy", "Semana", "Pendientes", "Facturable"];
