@@ -37,7 +37,7 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
       return subtitle ?? "";
     }
 
-    return `Filtro · ${deferredQuery}`;
+    return `Filtro - ${deferredQuery}`;
   }, [deferredQuery, subtitle]);
 
   const handleMarkAsRead = (id: string) => {
@@ -59,7 +59,7 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
 
   const handleLogout = async () => {
     await logout();
-    router.push("/login");
+    router.replace("/login");
     router.refresh();
   };
 
@@ -114,7 +114,7 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
         </div>
 
         <div className="grid gap-3 xl:min-w-[360px]">
-          <div className={`relative overflow-hidden rounded-[28px] border border-border/70 bg-background/60 p-4`}>
+          <div className="relative overflow-hidden rounded-[28px] border border-border/70 bg-background/60 p-4">
             <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${roleInfo.accent}`} />
             <div className="relative flex items-center gap-4">
               <UserAvatar
@@ -143,10 +143,10 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
               Exportar
             </Button>
             <Button variant="outline" asChild className="flex-1">
-                  <Link href="/app/perfil">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Perfil
-                  </Link>
+              <Link href="/app/perfil">
+                <ArrowLeft className="mr-2 h-4 w-4 rotate-180" />
+                Perfil
+              </Link>
             </Button>
             <Button variant="outline" type="button" onClick={handleLogout} className="flex-1">
               <LogOut className="mr-2 h-4 w-4" />

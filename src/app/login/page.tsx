@@ -62,7 +62,6 @@ function LoginPageContent() {
 
   useEffect(() => {
     if (!hydrated) return;
-
     router.prefetch(nextPath);
     router.prefetch("/app/dashboard");
     router.prefetch("/app/perfil");
@@ -168,9 +167,15 @@ function LoginPageContent() {
         <div className="hero-orb hero-orb-c" />
         <div className="tech-ring tech-ring-a" />
         <div className="tech-ring tech-ring-b" />
+        <div className="signal-beam signal-beam-a" />
+        <div className="signal-beam signal-beam-b" />
+        <div className="signal-beam signal-beam-c" />
+        <div className="floating-node floating-node-a" />
+        <div className="floating-node floating-node-b" />
+        <div className="floating-node floating-node-c" />
       </div>
 
-      <div className="relative mx-auto grid min-h-[calc(100vh-2rem)] max-w-[1500px] gap-6 lg:grid-cols-[1.06fr_0.94fr]">
+      <div className="relative mx-auto grid min-h-[calc(100vh-2rem)] max-w-[1500px] gap-6 lg:grid-cols-[1.18fr_0.82fr]">
         <motion.section
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -187,13 +192,15 @@ function LoginPageContent() {
 
               <div className="max-w-3xl space-y-5">
                 <h1 className="text-5xl font-extrabold tracking-[-0.06em] lg:text-7xl">
-                  Acceso limpio para una operativa técnica seria.
+                  Acceso seguro con presencia de producto real.
                 </h1>
-                <p className="max-w-xl text-lg leading-8 text-slate-300">Acceso seguro para equipos operativos.</p>
+                <p className="max-w-xl text-lg leading-8 text-slate-300">
+                  Entrada compacta. Fondo vivo. Identidad mas solida para una plataforma tecnica premium.
+                </p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
-                {["tickets", "clientes", "export", authBadge.toLowerCase()].slice(0, 3).map((item) => (
+                {["trace", "uptime", "sync"].map((item) => (
                   <div key={item} className="rounded-[28px] border border-white/8 bg-white/5 p-4">
                     <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">{item}</p>
                   </div>
@@ -201,23 +208,36 @@ function LoginPageContent() {
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[520px] perspective-[1800px]">
-              <div className="hero-tilt-panel rounded-[34px] border border-white/10 bg-white/5 p-5 backdrop-blur">
-                <div className="grid gap-4 sm:grid-cols-2">
+            <div className="relative mx-auto w-full max-w-[640px] perspective-[1800px]">
+              <div className="hero-tilt-panel tech-hud rounded-[34px] border border-white/10 p-5 backdrop-blur">
+                <div className="grid gap-4 sm:grid-cols-[1.2fr_0.8fr]">
+                  <div className="rounded-[28px] border border-white/8 bg-slate-950/46 p-5 sm:row-span-2">
+                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Access core</p>
+                    <div className="mt-5 grid gap-3">
+                      {["tickets live", "client sync", "pdf export", "team activity"].map((item) => (
+                        <div key={item} className="rounded-[22px] border border-white/8 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-100">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="rounded-[26px] border border-white/8 bg-slate-950/50 p-4">
                     <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Auth</p>
                     <p className="mt-3 text-xl font-bold">{authBadge}</p>
                   </div>
+
                   <div className="rounded-[26px] border border-white/8 bg-slate-950/50 p-4">
-                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Mode</p>
-                    <p className="mt-3 text-xl font-bold">Minimal UI</p>
+                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Rhythm</p>
+                    <p className="mt-3 text-xl font-bold">Active UI</p>
                   </div>
+
                   <div className="rounded-[26px] border border-white/8 bg-slate-950/50 p-4 sm:col-span-2">
                     <div className="flex items-center gap-3">
                       <div className="rounded-2xl bg-sky-400/12 p-3 text-sky-300">
                         <ShieldCheck className="h-5 w-5" />
                       </div>
-                      <p className="text-sm text-slate-300">Autenticación preparada para entorno profesional.</p>
+                      <p className="text-sm text-slate-300">Autenticacion preparada para crecer hacia un entorno de empresa.</p>
                     </div>
                   </div>
                 </div>
@@ -230,39 +250,37 @@ function LoginPageContent() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.58, delay: 0.12, ease: "easeOut" }}
-          className="relative rounded-[40px] border border-border/70 bg-card/84 p-5 shadow-soft backdrop-blur lg:p-8"
+          className="relative rounded-[40px] border border-white/10 bg-slate-950/84 p-5 shadow-soft backdrop-blur lg:p-8"
         >
-          <div className="mx-auto flex max-w-lg flex-col gap-5">
+          <div className="mx-auto flex max-w-md flex-col gap-5">
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-primary">
                 <LockKeyhole className="h-3.5 w-3.5" />
                 Acceso
               </div>
-              <h2 className="text-3xl font-extrabold tracking-tight lg:text-4xl">Iniciar sesión</h2>
+              <h2 className="text-3xl font-extrabold tracking-tight lg:text-4xl">Iniciar sesion</h2>
             </div>
 
-            <Card className="space-y-4 border-border/60 bg-background/60">
+            <Card className="space-y-4 border-white/10 bg-white/5">
               <Button
                 type="button"
-                className="h-12 w-full rounded-2xl bg-foreground text-background hover:bg-foreground/92"
+                className="h-12 w-full rounded-2xl bg-white text-slate-950 hover:bg-white/92"
                 onClick={handleGoogleLogin}
                 disabled={submitting || !isCloudAuthEnabled}
               >
                 <GoogleIcon />
                 <span className="ml-2">Continuar con Google</span>
               </Button>
-              {!isCloudAuthEnabled ? (
-                <p className="text-sm text-muted-foreground">Configura Supabase para activar Google.</p>
-              ) : null}
+              {!isCloudAuthEnabled ? <p className="text-sm text-slate-400">Configura Supabase para activar Google.</p> : null}
             </Card>
 
             {!isCloudAuthEnabled ? (
               <>
-                <div className="relative grid grid-cols-2 rounded-[24px] border border-border/70 bg-muted/45 p-1.5">
+                <div className="relative grid grid-cols-2 rounded-[24px] border border-white/10 bg-white/5 p-1.5">
                   <motion.div
                     animate={{ x: mode === "login" ? "0%" : "100%" }}
                     transition={{ type: "spring", stiffness: 340, damping: 28 }}
-                    className="absolute left-1.5 top-1.5 h-[calc(100%-12px)] w-[calc(50%-6px)] rounded-[18px] bg-card shadow-soft"
+                    className="absolute left-1.5 top-1.5 h-[calc(100%-12px)] w-[calc(50%-6px)] rounded-[18px] bg-white shadow-soft"
                   />
                   <button
                     type="button"
@@ -271,7 +289,7 @@ function LoginPageContent() {
                       setError("");
                       setMessage("");
                     }}
-                    className={`relative z-10 rounded-[18px] px-4 py-3 text-sm font-semibold transition ${mode === "login" ? "text-foreground" : "text-muted-foreground"}`}
+                    className={`relative z-10 rounded-[18px] px-4 py-3 text-sm font-semibold transition ${mode === "login" ? "text-slate-950" : "text-slate-400"}`}
                   >
                     Entrar
                   </button>
@@ -282,7 +300,7 @@ function LoginPageContent() {
                       setError("");
                       setMessage("");
                     }}
-                    className={`relative z-10 rounded-[18px] px-4 py-3 text-sm font-semibold transition ${mode === "register" ? "text-foreground" : "text-muted-foreground"}`}
+                    className={`relative z-10 rounded-[18px] px-4 py-3 text-sm font-semibold transition ${mode === "register" ? "text-slate-950" : "text-slate-400"}`}
                   >
                     Crear cuenta
                   </button>
@@ -296,7 +314,7 @@ function LoginPageContent() {
                 >
                   {mode === "login" ? (
                     <form className="space-y-4" onSubmit={runLogin}>
-                      <Card className="space-y-5 border-border/60 bg-background/60">
+                      <Card className="space-y-5 border-white/10 bg-white/5">
                         <div className="space-y-2">
                           <label className="text-sm font-medium">Correo</label>
                           <div className="relative">
@@ -305,7 +323,7 @@ function LoginPageContent() {
                               type="email"
                               value={loginForm.email}
                               onChange={(event) => setLoginForm((current) => ({ ...current, email: event.target.value }))}
-                              className="h-12 rounded-2xl bg-background/80 pl-11"
+                              className="h-12 rounded-2xl border-white/10 bg-slate-950/60 pl-11"
                               required
                             />
                           </div>
@@ -319,7 +337,7 @@ function LoginPageContent() {
                               type="password"
                               value={loginForm.password}
                               onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
-                              className="h-12 rounded-2xl bg-background/80 pl-11"
+                              className="h-12 rounded-2xl border-white/10 bg-slate-950/60 pl-11"
                               required
                             />
                           </div>
@@ -333,14 +351,14 @@ function LoginPageContent() {
                     </form>
                   ) : (
                     <form className="space-y-4" onSubmit={runRegister}>
-                      <Card className="space-y-5 border-border/60 bg-background/60">
+                      <Card className="space-y-5 border-white/10 bg-white/5">
                         <div className="grid gap-4 sm:grid-cols-2">
                           <div className="space-y-2 sm:col-span-2">
                             <label className="text-sm font-medium">Nombre</label>
                             <Input
                               value={registerForm.name}
                               onChange={(event) => setRegisterForm((current) => ({ ...current, name: event.target.value }))}
-                              className="h-12 rounded-2xl bg-background/80"
+                              className="h-12 rounded-2xl border-white/10 bg-slate-950/60"
                               required
                             />
                           </div>
@@ -351,7 +369,7 @@ function LoginPageContent() {
                               type="email"
                               value={registerForm.email}
                               onChange={(event) => setRegisterForm((current) => ({ ...current, email: event.target.value }))}
-                              className="h-12 rounded-2xl bg-background/80"
+                              className="h-12 rounded-2xl border-white/10 bg-slate-950/60"
                               required
                             />
                           </div>
@@ -361,7 +379,7 @@ function LoginPageContent() {
                             <Input
                               value={registerForm.company}
                               onChange={(event) => setRegisterForm((current) => ({ ...current, company: event.target.value }))}
-                              className="h-12 rounded-2xl bg-background/80"
+                              className="h-12 rounded-2xl border-white/10 bg-slate-950/60"
                               required
                             />
                           </div>
@@ -371,7 +389,7 @@ function LoginPageContent() {
                             <Select
                               value={registerForm.role}
                               onChange={(event) => setRegisterForm((current) => ({ ...current, role: event.target.value }))}
-                              className="h-12 rounded-2xl bg-background/80"
+                              className="h-12 rounded-2xl border-white/10 bg-slate-950/60"
                             >
                               {Object.entries(roleLabels).map(([value, label]) => (
                                 <option key={value} value={value}>
@@ -387,7 +405,7 @@ function LoginPageContent() {
                               type="password"
                               value={registerForm.password}
                               onChange={(event) => setRegisterForm((current) => ({ ...current, password: event.target.value }))}
-                              className="h-12 rounded-2xl bg-background/80"
+                              className="h-12 rounded-2xl border-white/10 bg-slate-950/60"
                               required
                             />
                           </div>
@@ -400,7 +418,7 @@ function LoginPageContent() {
                               onChange={(event) =>
                                 setRegisterForm((current) => ({ ...current, confirmPassword: event.target.value }))
                               }
-                              className="h-12 rounded-2xl bg-background/80"
+                              className="h-12 rounded-2xl border-white/10 bg-slate-950/60"
                               required
                             />
                           </div>
@@ -417,19 +435,11 @@ function LoginPageContent() {
               </>
             ) : null}
 
-            {message ? (
-              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
-                {message}
-              </div>
-            ) : null}
+            {message ? <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">{message}</div> : null}
 
-            {error ? (
-              <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
-                {error}
-              </div>
-            ) : null}
+            {error ? <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">{error}</div> : null}
 
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div className="flex items-center justify-between text-sm text-slate-400">
               <Link href="/" className="font-semibold text-primary">
                 Volver
               </Link>

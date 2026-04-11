@@ -4,11 +4,10 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronRight, LogOut, MoonStar, Sparkles, SunMedium } from "lucide-react";
+import { ChevronRight, LogOut, Sparkles } from "lucide-react";
 import { IBERSOFT_BRAND } from "@/lib/exports";
 import { navigation, roleMeta } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { useAppTheme } from "@/components/providers/app-providers";
 import { useAuth } from "@/components/providers/auth-provider";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,6 @@ import { Button } from "@/components/ui/button";
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, toggleTheme } = useAppTheme();
   const { user, logout } = useAuth();
 
   useEffect(() => {
@@ -44,7 +42,7 @@ export function Sidebar() {
 
   const handleLogout = async () => {
     await logout();
-    router.push("/login");
+    router.replace("/login");
     router.refresh();
   };
 
@@ -61,9 +59,9 @@ export function Sidebar() {
           </div>
         </Link>
 
-        <Button variant="ghost" size="icon" onClick={toggleTheme}>
-          {theme === "dark" ? <SunMedium className="h-5 w-5" /> : <MoonStar className="h-5 w-5" />}
-        </Button>
+        <div className="rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+          Live
+        </div>
       </div>
 
       <div className="mb-5 overflow-hidden rounded-[30px] border border-border/60 bg-background/55 p-4">

@@ -37,16 +37,18 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return isCloudAuthEnabled ? (
+    return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="rounded-[28px] border border-border/70 bg-card/80 px-8 py-10 text-center shadow-soft backdrop-blur">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <ShieldAlert className="h-7 w-7" />
           </div>
-          <p className="text-sm text-muted-foreground">Redirigiendo al acceso seguro...</p>
+          <p className="text-sm text-muted-foreground">
+            {isCloudAuthEnabled ? "Redirigiendo al acceso seguro..." : "Volviendo al login..."}
+          </p>
         </div>
       </div>
-    ) : null;
+    );
   }
 
   return <>{children}</>;
