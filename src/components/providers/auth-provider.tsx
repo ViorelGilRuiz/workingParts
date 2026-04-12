@@ -1,10 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AuthChangeEvent, Session, User as SupabaseUser } from "@supabase/supabase-js";
 import { currentUser, teamMembers } from "@/data/demo";
 import { Role, User } from "@/types";
-import { getAuthCallbackUrl, isSupabaseConfigured } from "@/lib/env";
+import { getAuthCallbackUrl, getSafeAppPath, isSupabaseConfigured } from "@/lib/env";
 import { getAvatarLabel, resolveUserRole } from "@/lib/auth/roles";
 import { loginInputSchema, normalizeEmail, normalizeText, registerInputSchema } from "@/lib/auth/validation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -37,7 +37,7 @@ interface AuthContextValue {
   login: (input: LoginInput) => Promise<{ ok: true } | { ok: false; message: string }>;
   loginWithGoogle: (nextPath?: string) => Promise<{ ok: true } | { ok: false; message: string }>;
   register: (input: RegisterInput) => Promise<{ ok: true } | { ok: false; message: string }>;
-  logout: () => Promise<void>;
+  logout: () => Promise<{ ok: true } | { ok: false; message: string }>;
 }
 
 const seedUsers: StoredAuthUser[] = [
@@ -117,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = useState<StoredAuthUser[]>(seedUsers);
   const [user, setUser] = useState<User | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const isSigningOutRef = useRef(false);
   const isCloudAuthEnabled = isSupabaseConfigured();
 
   useEffect(() => {
@@ -137,6 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setHydrated(true);
         } catch {
           if (!mounted) return;
+          setUser(null);
           setHydrated(true);
         }
       };
@@ -148,6 +150,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
         if (!mounted) return;
         setUser(session?.user ? mapSupabaseUser(session.user) : null);
+        if (isSigningOutRef.current && !session) {
+          isSigningOutRef.current = false;
+        }
       });
 
       return () => {
@@ -214,6 +219,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       loginWithGoogle: async (nextPath = "/app/dashboard") => {
         const supabase = getSupabaseBrowserClient();
+        const safeNextPath = getSafeAppPath(nextPath);
 
         if (!isCloudAuthEnabled || !supabase) {
           return { ok: false, message: "Google Login requiere configurar Supabase Auth." };
@@ -222,7 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: getAuthCallbackUrl(nextPath),
+            redirectTo: getAuthCallbackUrl(safeNextPath),
             queryParams: {
               access_type: "offline",
               prompt: "select_account"
@@ -231,7 +237,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (error) {
-          return { ok: false, message: error.message };
+          return { ok: false, message: "No se ha podido iniciar el acceso con Google. Revisa la configuracion OAuth." };
         }
 
         return { ok: true };
@@ -273,13 +279,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout: async () => {
         if (isCloudAuthEnabled) {
           const supabase = getSupabaseBrowserClient();
-          await supabase?.auth.signOut();
+          isSigningOutRef.current = true;
+          await Promise.allSettled([
+            supabase?.auth.signOut({ scope: "local" }),
+            fetch("/auth/logout", {
+              method: "POST",
+              credentials: "include"
+            })
+          ]);
           setUser(null);
-          return;
+          return { ok: true };
         }
 
         setUser(null);
         window.localStorage.removeItem(SESSION_STORAGE_KEY);
+        return { ok: true };
       }
     }),
     [hydrated, isCloudAuthEnabled, user, users]

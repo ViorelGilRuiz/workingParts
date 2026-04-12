@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { ReportsProvider } from "@/components/providers/reports-provider";
+import { WorkspaceProvider } from "@/components/providers/workspace-provider";
 
 type Theme = "light" | "dark";
 
@@ -39,7 +40,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       <AppContext.Provider value={value}>
-        <ReportsProvider>{children}</ReportsProvider>
+        <WorkspaceProvider>
+          <ReportsProvider>{children}</ReportsProvider>
+        </WorkspaceProvider>
       </AppContext.Provider>
     </AuthProvider>
   );

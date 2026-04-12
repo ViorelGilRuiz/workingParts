@@ -8,16 +8,6 @@ export const IBERSOFT_BRAND = {
   hourlyRate: 50
 };
 
-const PDF_COLORS = {
-  ink: [15, 23, 42] as const,
-  body: [51, 65, 85] as const,
-  muted: [100, 116, 139] as const,
-  line: [203, 213, 225] as const,
-  panel: [248, 250, 252] as const,
-  primary: [14, 165, 233] as const,
-  accent: [45, 212, 191] as const
-};
-
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("es-ES", {
     style: "currency",
@@ -34,116 +24,87 @@ function formatSignedDate(value: string | null) {
   }).format(new Date(value));
 }
 
-function drawHeader(pdf: any, title: string, subtitle: string) {
-  pdf.setFillColor(...PDF_COLORS.ink);
-  pdf.rect(0, 0, 210, 38, "F");
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(24);
-  pdf.text(IBERSOFT_BRAND.name, 14, 18);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(10);
-  pdf.text(IBERSOFT_BRAND.legalName, 14, 25);
-  pdf.text(subtitle, 14, 31);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(18);
-  pdf.text(title, 196, 18, { align: "right" });
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(9);
-  pdf.text(IBERSOFT_BRAND.email, 196, 25, { align: "right" });
-  pdf.text(IBERSOFT_BRAND.website, 196, 31, { align: "right" });
-}
-
-function drawMetricCard(pdf: any, x: number, y: number, label: string, value: string) {
-  pdf.setFillColor(...PDF_COLORS.panel);
-  pdf.setDrawColor(...PDF_COLORS.line);
-  pdf.roundedRect(x, y, 56, 26, 5, 5, "FD");
-  pdf.setTextColor(...PDF_COLORS.muted);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(9);
-  pdf.text(label, x + 4, y + 8);
-  pdf.setTextColor(...PDF_COLORS.ink);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(13);
-  pdf.text(value, x + 4, y + 18);
-}
-
-function drawSectionTitle(pdf: any, title: string, y: number) {
-  pdf.setTextColor(...PDF_COLORS.ink);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(12);
-  pdf.text(title, 14, y);
-  pdf.setDrawColor(...PDF_COLORS.line);
-  pdf.line(14, y + 3, 196, y + 3);
-}
-
-function drawLabeledRows(pdf: any, rows: Array<[string, string]>, startY: number, splitX = 96) {
-  rows.forEach(([label, value], index) => {
-    const y = startY + index * 8;
-    pdf.setTextColor(...PDF_COLORS.muted);
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(9);
-    pdf.text(label, 14, y);
-    pdf.setTextColor(...PDF_COLORS.ink);
-    pdf.text(value, splitX, y);
-  });
-}
-
-function drawFooter(pdf: any, pageLabel: string) {
-  pdf.setDrawColor(...PDF_COLORS.line);
-  pdf.line(14, 286, 196, 286);
-  pdf.setTextColor(...PDF_COLORS.muted);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(8);
-  pdf.text("WorkingParts · Operativa tecnica y trazabilidad documental", 14, 292);
-  pdf.text(pageLabel, 196, 292, { align: "right" });
-}
-
 export async function buildExcelWorkbook(data: WorkReport[]) {
   const ExcelJS = (await import("exceljs")).default;
   const workbook = new ExcelJS.Workbook();
   workbook.creator = IBERSOFT_BRAND.name;
-  workbook.subject = "Resumen de partes tecnicos";
-  workbook.company = IBERSOFT_BRAND.legalName;
+  workbook.created = new Date();
+  workbook.modified = new Date();
 
-  const sheet = workbook.addWorksheet("Partes");
-  sheet.views = [{ state: "frozen", ySplit: 1 }];
-  sheet.columns = [
+  const summarySheet = workbook.addWorksheet("Resumen ejecutivo", {
+    views: [{ state: "frozen", ySplit: 4 }]
+  });
+  const detailSheet = workbook.addWorksheet("Detalle de partes", {
+    views: [{ state: "frozen", ySplit: 1 }]
+  });
+
+  const totalHours = data.reduce((sum, report) => sum + report.durationHours, 0);
+  const totalAmount = data.reduce((sum, report) => sum + report.durationHours * report.hourlyRate, 0);
+  const signedReports = data.filter((report) => report.hasSignature).length;
+  const pendingReports = data.filter((report) => report.status === "Pendiente" || report.status === "En seguimiento").length;
+
+  summarySheet.columns = [
+    { key: "a", width: 28 },
+    { key: "b", width: 26 },
+    { key: "c", width: 18 }
+  ];
+  summarySheet.mergeCells("A1:C1");
+  summarySheet.getCell("A1").value = `${IBERSOFT_BRAND.name} | Resumen operativo`;
+  summarySheet.getCell("A1").font = { size: 18, bold: true, color: { argb: "FF0F172A" } };
+  summarySheet.getCell("A2").value = "Generado";
+  summarySheet.getCell("B2").value = new Date().toLocaleString("es-ES");
+  summarySheet.getCell("A3").value = "Estado";
+  summarySheet.getCell("B3").value = `${data.length} partes | ${totalHours.toFixed(1)} h | ${formatCurrency(totalAmount)}`;
+
+  [
+    ["Partes totales", `${data.length}`],
+    ["Horas registradas", `${totalHours.toFixed(1)} h`],
+    ["Importe estimado", formatCurrency(totalAmount)],
+    ["Firmados", `${signedReports}`],
+    ["Pendientes", `${pendingReports}`]
+  ].forEach(([label, value], index) => {
+    const row = summarySheet.getRow(5 + index);
+    row.getCell(1).value = label;
+    row.getCell(2).value = value;
+    row.getCell(1).font = { bold: true };
+    row.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } };
+    row.getCell(2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
+  });
+
+  detailSheet.columns = [
     { header: "Parte", key: "id", width: 18 },
     { header: "Fecha", key: "date", width: 14 },
     { header: "Tecnico", key: "technician", width: 24 },
-    { header: "Cliente", key: "client", width: 24 },
+    { header: "Cliente", key: "client", width: 22 },
+    { header: "Empresa", key: "company", width: 26 },
     { header: "Categoria", key: "category", width: 22 },
     { header: "Estado", key: "status", width: 18 },
+    { header: "Prioridad", key: "priority", width: 14 },
     { header: "Duracion", key: "durationHours", width: 14 },
-    { header: "Importe", key: "totalAmount", width: 16 }
+    { header: "Importe", key: "totalAmount", width: 14 },
+    { header: "Firma", key: "signature", width: 14 },
+    { header: "Observaciones", key: "observations", width: 38 }
   ];
+  detailSheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+  detailSheet.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
+  detailSheet.autoFilter = "A1:L1";
 
-  data.forEach((report) =>
-    sheet.addRow({
+  data.forEach((report) => {
+    const row = detailSheet.addRow({
       ...report,
-      totalAmount: report.durationHours * report.hourlyRate
-    })
-  );
-
-  const header = sheet.getRow(1);
-  header.font = { bold: true, color: { argb: "FFF8FAFC" } };
-  header.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
-  header.alignment = { vertical: "middle", horizontal: "center" };
-  header.height = 24;
-
-  sheet.eachRow((row, index) => {
-    if (index === 1) return;
-
-    row.height = 22;
-    row.alignment = { vertical: "middle" };
-    row.eachCell((cell) => {
-      cell.border = {
-        bottom: { style: "thin", color: { argb: "FFE2E8F0" } }
-      };
+      totalAmount: report.durationHours * report.hourlyRate,
+      signature: report.hasSignature ? "Firmado" : "Pendiente"
     });
 
-    if (index % 2 === 0) {
+    row.getCell(2).numFmt = "dd/mm/yyyy";
+    row.getCell(9).numFmt = '0.0" h"';
+    row.getCell(10).numFmt = '#,##0.00 [$EUR]';
+    row.alignment = { vertical: "middle", wrapText: true };
+  });
+
+  detailSheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+    if (rowNumber % 2 === 0) {
       row.eachCell((cell) => {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
       });
@@ -156,56 +117,26 @@ export async function buildExcelWorkbook(data: WorkReport[]) {
 export async function buildPdfSummary(data: WorkReport[]) {
   const jsPDF = (await import("jspdf")).default;
   const pdf = new jsPDF();
-  const totalHours = data.reduce((sum, report) => sum + report.durationHours, 0);
-  const totalBilling = data.reduce((sum, report) => sum + report.durationHours * report.hourlyRate, 0);
-  const signedCount = data.filter((report) => report.hasSignature || report.clientSignatureDataUrl).length;
 
-  drawHeader(pdf, "Resumen de partes", "Documento ejecutivo para supervision y control");
-
-  drawMetricCard(pdf, 14, 48, "Partes", `${data.length}`);
-  drawMetricCard(pdf, 76, 48, "Horas", `${totalHours.toFixed(1)} h`);
-  drawMetricCard(pdf, 138, 48, "Facturacion", formatCurrency(totalBilling));
-
-  drawMetricCard(pdf, 14, 80, "Firmas", `${signedCount}`);
-  drawMetricCard(pdf, 76, 80, "Pendientes", `${data.filter((item) => item.status === "Pendiente").length}`);
-  drawMetricCard(pdf, 138, 80, "Media", data.length ? `${(totalHours / data.length).toFixed(1)} h` : "0 h");
-
-  drawSectionTitle(pdf, "Detalle operativo", 118);
-  pdf.setFont("helvetica", "bold");
+  pdf.setFillColor(15, 23, 42);
+  pdf.rect(0, 0, 210, 28, "F");
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(18);
+  pdf.text(`${IBERSOFT_BRAND.name} | Resumen de partes`, 14, 18);
   pdf.setFontSize(9);
-  pdf.setTextColor(...PDF_COLORS.muted);
-  pdf.text("Parte", 14, 126);
-  pdf.text("Cliente", 44, 126);
-  pdf.text("Estado", 108, 126);
-  pdf.text("Horas", 146, 126);
-  pdf.text("Importe", 196, 126, { align: "right" });
+  pdf.text(new Date().toLocaleString("es-ES"), 196, 18, { align: "right" });
 
-  let currentY = 134;
-  data.slice(0, 9).forEach((report, index) => {
-    pdf.setFillColor(index % 2 === 0 ? 248 : 255, 250, 252);
-    pdf.roundedRect(14, currentY - 6, 182, 12, 2, 2, "F");
-    pdf.setTextColor(...PDF_COLORS.ink);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(report.id, 16, currentY);
-    pdf.text(report.client.slice(0, 30), 44, currentY);
-    pdf.text(report.status, 108, currentY);
-    pdf.text(`${report.durationHours.toFixed(1)} h`, 146, currentY);
-    pdf.text(formatCurrency(report.durationHours * report.hourlyRate), 194, currentY, { align: "right" });
-    currentY += 14;
+  pdf.setTextColor(15, 23, 42);
+  pdf.setFontSize(11);
+  data.slice(0, 8).forEach((report, index) => {
+    const total = formatCurrency(report.durationHours * report.hourlyRate);
+    const y = 44 + index * 18;
+    pdf.setDrawColor(226, 232, 240);
+    pdf.roundedRect(14, y - 7, 182, 12, 3, 3);
+    pdf.text(`${report.id} | ${report.client}`, 18, y);
+    pdf.text(`${report.category} | ${report.durationHours.toFixed(1)} h | ${total}`, 18, y + 5);
   });
 
-  drawSectionTitle(pdf, "Observaciones", 266);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(9);
-  pdf.setTextColor(...PDF_COLORS.body);
-  pdf.text(
-    "Resumen generado desde WorkingParts para seguimiento interno, actividad tecnica y control de facturacion.",
-    14,
-    274,
-    { maxWidth: 182 }
-  );
-
-  drawFooter(pdf, "Resumen operativo");
   return pdf;
 }
 
@@ -214,120 +145,112 @@ export async function buildReportInvoicePdf(report: WorkReport) {
   const pdf = new jsPDF();
   const totalAmount = report.durationHours * report.hourlyRate;
 
-  drawHeader(pdf, "Factura de servicio", "Parte tecnico con detalle documental y conformidad");
+  pdf.setFillColor(11, 18, 32);
+  pdf.rect(0, 0, 210, 34, "F");
 
-  drawMetricCard(pdf, 14, 48, "Parte", report.id);
-  drawMetricCard(pdf, 76, 48, "Fecha", report.date);
-  drawMetricCard(pdf, 138, 48, "Total", formatCurrency(totalAmount));
-
-  drawSectionTitle(pdf, "Datos del servicio", 88);
-  drawLabeledRows(
-    pdf,
-    [
-      ["Cliente", report.client],
-      ["Empresa", report.company],
-      ["Contacto", report.contact],
-      ["Tecnico", report.technician],
-      ["Categoria", report.category],
-      ["Horario", `${report.startTime} - ${report.endTime}`],
-      ["Prioridad", report.priority],
-      ["Estado", report.status]
-    ],
-    98
-  );
-
-  drawSectionTitle(pdf, "Concepto facturable", 166);
-  pdf.setFillColor(...PDF_COLORS.panel);
-  pdf.roundedRect(14, 174, 182, 28, 4, 4, "F");
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(9);
-  pdf.setTextColor(...PDF_COLORS.muted);
-  pdf.text("Descripcion", 18, 182);
-  pdf.text("Horas", 138, 182);
-  pdf.text("Tarifa", 156, 182);
-  pdf.text("Importe", 194, 182, { align: "right" });
-
-  pdf.setFont("helvetica", "normal");
-  pdf.setTextColor(...PDF_COLORS.ink);
-  pdf.text(`Servicio tecnico ${report.category}`, 18, 193);
-  pdf.text(`${report.durationHours.toFixed(1)} h`, 138, 193);
-  pdf.text(formatCurrency(report.hourlyRate), 156, 193);
-  pdf.text(formatCurrency(totalAmount), 194, 193, { align: "right" });
-
-  drawSectionTitle(pdf, "Detalle tecnico", 216);
-  pdf.setFont("helvetica", "bold");
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(24);
+  pdf.text(IBERSOFT_BRAND.name, 14, 18);
   pdf.setFontSize(10);
-  pdf.setTextColor(...PDF_COLORS.ink);
-  pdf.text("Incidencia", 14, 226);
-  pdf.setFont("helvetica", "normal");
-  pdf.setTextColor(...PDF_COLORS.body);
-  pdf.text(report.reason, 14, 233, { maxWidth: 182 });
+  pdf.text("Parte tecnico | Factura de servicio", 14, 26);
 
-  pdf.setFont("helvetica", "bold");
-  pdf.setTextColor(...PDF_COLORS.ink);
-  pdf.text("Trabajo realizado", 14, 246);
-  pdf.setFont("helvetica", "normal");
-  pdf.setTextColor(...PDF_COLORS.body);
-  pdf.text(report.workDone, 14, 253, { maxWidth: 182 });
-
-  pdf.setFont("helvetica", "bold");
-  pdf.setTextColor(...PDF_COLORS.ink);
-  pdf.text("Solucion aplicada", 14, 266);
-  pdf.setFont("helvetica", "normal");
-  pdf.setTextColor(...PDF_COLORS.body);
-  pdf.text(report.solution, 14, 273, { maxWidth: 182 });
-
-  pdf.addPage();
-  drawHeader(pdf, "Conformidad", "Validacion del servicio y firma digital");
-
-  drawSectionTitle(pdf, "Resumen economico", 54);
-  drawLabeledRows(
-    pdf,
-    [
-      ["Tarifa por hora", formatCurrency(report.hourlyRate)],
-      ["Horas facturables", `${report.durationHours.toFixed(1)} h`],
-      ["Mantenimiento", report.maintenanceIncluded ? "Incluido" : "No incluido"],
-      ["Total factura", formatCurrency(totalAmount)]
-    ],
-    64,
-    126
-  );
-
-  drawSectionTitle(pdf, "Conformidad del cliente", 108);
-  pdf.setTextColor(...PDF_COLORS.body);
-  pdf.setFont("helvetica", "normal");
   pdf.setFontSize(10);
-  pdf.text(`Firmado por: ${report.clientSignatureName || report.contact}`, 14, 118);
-  pdf.text(`Fecha de firma: ${formatSignedDate(report.signedAt)}`, 14, 126);
-  pdf.text("La firma digital confirma la recepcion y conformidad del servicio realizado.", 14, 136, {
-    maxWidth: 182
+  pdf.text(IBERSOFT_BRAND.legalName, 138, 15);
+  pdf.text(IBERSOFT_BRAND.email, 138, 21);
+  pdf.text(IBERSOFT_BRAND.website, 138, 27);
+
+  pdf.setTextColor(20, 23, 28);
+  pdf.setFontSize(12);
+  pdf.text("Datos del servicio", 14, 48);
+  pdf.setDrawColor(220, 226, 234);
+  pdf.line(14, 51, 196, 51);
+
+  const serviceRows = [
+    ["Parte", report.id],
+    ["Fecha", report.date],
+    ["Cliente", report.client],
+    ["Empresa", report.company],
+    ["Contacto", report.contact],
+    ["Tecnico", report.technician],
+    ["Horario", `${report.startTime} - ${report.endTime}`],
+    ["Categoria", report.category]
+  ];
+
+  serviceRows.forEach(([label, value], index) => {
+    const y = 60 + index * 8;
+    pdf.setTextColor(100, 116, 139);
+    pdf.text(label, 14, y);
+    pdf.setTextColor(20, 23, 28);
+    pdf.text(value, 48, y);
   });
 
-  pdf.setDrawColor(...PDF_COLORS.line);
-  pdf.roundedRect(14, 150, 84, 40, 4, 4);
-  pdf.roundedRect(112, 150, 84, 40, 4, 4);
-  pdf.setTextColor(...PDF_COLORS.muted);
-  pdf.text("Firma Ibersoft", 18, 185);
-  pdf.text("Firma cliente", 116, 185);
+  pdf.setFontSize(12);
+  pdf.text("Concepto facturable", 14, 136);
+  pdf.line(14, 139, 196, 139);
+
+  pdf.setFontSize(10);
+  pdf.setTextColor(100, 116, 139);
+  pdf.text("Descripcion", 14, 148);
+  pdf.text("Cantidad", 128, 148);
+  pdf.text("Precio", 154, 148);
+  pdf.text("Importe", 180, 148);
+
+  pdf.setTextColor(20, 23, 28);
+  pdf.text(`Servicio tecnico ${report.category}`, 14, 158);
+  pdf.text(`${report.durationHours.toFixed(1)} h`, 128, 158);
+  pdf.text(formatCurrency(report.hourlyRate), 154, 158);
+  pdf.text(formatCurrency(totalAmount), 196, 158, { align: "right" });
+
+  pdf.setTextColor(100, 116, 139);
+  pdf.text("Salida de mantenimiento", 14, 168);
+  pdf.text(report.maintenanceIncluded ? "Incluida" : "No", 128, 168);
+  pdf.text(formatCurrency(0), 154, 168);
+  pdf.text(formatCurrency(0), 196, 168, { align: "right" });
+
+  pdf.setDrawColor(220, 226, 234);
+  pdf.line(128, 176, 196, 176);
+  pdf.setTextColor(20, 23, 28);
+  pdf.setFontSize(12);
+  pdf.text("Total", 154, 184);
+  pdf.text(formatCurrency(totalAmount), 196, 184, { align: "right" });
+
+  pdf.setFontSize(11);
+  pdf.text("Incidencia", 14, 198);
+  pdf.setFontSize(10);
+  pdf.setTextColor(55, 65, 81);
+  pdf.text(report.reason, 14, 206, { maxWidth: 182 });
+
+  pdf.setTextColor(20, 23, 28);
+  pdf.text("Trabajo realizado", 14, 220);
+  pdf.setTextColor(55, 65, 81);
+  pdf.text(report.workDone, 14, 228, { maxWidth: 182 });
+
+  pdf.setTextColor(20, 23, 28);
+  pdf.text("Solucion aplicada", 14, 244);
+  pdf.setTextColor(55, 65, 81);
+  pdf.text(report.solution, 14, 252, { maxWidth: 182 });
+
+  pdf.setTextColor(20, 23, 28);
+  pdf.text("Conformidad del cliente", 14, 268);
+  pdf.setTextColor(100, 116, 139);
+  pdf.text(`Firmado por: ${report.clientSignatureName || report.contact}`, 14, 276);
+  pdf.text(`Fecha de firma: ${formatSignedDate(report.signedAt)}`, 14, 282);
+  pdf.text("La firma digital confirma la conformidad del servicio y el importe indicado.", 14, 288);
+
+  pdf.setDrawColor(148, 163, 184);
+  pdf.line(14, 296, 94, 296);
+  pdf.line(118, 296, 196, 296);
+  pdf.setTextColor(100, 116, 139);
+  pdf.text("Firma Ibersoft", 14, 302);
+  pdf.text("Firma cliente", 118, 302);
 
   if (report.clientSignatureDataUrl) {
     try {
-      pdf.addImage(report.clientSignatureDataUrl, "PNG", 120, 158, 58, 18);
+      pdf.addImage(report.clientSignatureDataUrl, "PNG", 118, 284, 58, 10);
     } catch {
-      pdf.setTextColor(...PDF_COLORS.body);
-      pdf.text("Firma digital registrada", 116, 168);
+      pdf.text("Firma digital registrada", 118, 290);
     }
   }
 
-  drawSectionTitle(pdf, "Notas", 214);
-  pdf.setTextColor(...PDF_COLORS.body);
-  pdf.text(
-    report.observations || "Documento generado desde WorkingParts para uso interno, validacion del cliente y soporte de facturacion.",
-    14,
-    224,
-    { maxWidth: 182 }
-  );
-
-  drawFooter(pdf, `Factura ${report.id}`);
   return pdf;
 }

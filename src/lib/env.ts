@@ -19,7 +19,19 @@ export function isSupabaseConfigured() {
   return Boolean(appEnv.supabaseUrl && appEnv.supabaseAnonKey);
 }
 
+export function getSafeAppPath(nextPath?: string | null) {
+  if (!nextPath || !nextPath.startsWith("/")) {
+    return "/app/dashboard";
+  }
+
+  if (nextPath.startsWith("//")) {
+    return "/app/dashboard";
+  }
+
+  return nextPath;
+}
+
 export function getAuthCallbackUrl(nextPath = "/app/dashboard") {
   const baseUrl = appEnv.siteUrl.replace(/\/$/, "");
-  return `${baseUrl}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+  return `${baseUrl}/auth/callback?next=${encodeURIComponent(getSafeAppPath(nextPath))}`;
 }
