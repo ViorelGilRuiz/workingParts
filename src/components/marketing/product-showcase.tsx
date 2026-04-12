@@ -14,7 +14,7 @@ const showcaseItems = [
 
 export function ProductShowcase({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="relative mx-auto w-full max-w-[720px] perspective-[2400px]">
+    <div className="pointer-events-none relative mx-auto w-full max-w-[720px] perspective-[2400px]">
       <motion.div
         initial={{ opacity: 0, rotateX: 18, y: 24 }}
         animate={{ opacity: 1, rotateX: 12, y: 0 }}
