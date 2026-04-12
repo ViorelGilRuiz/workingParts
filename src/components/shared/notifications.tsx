@@ -4,11 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { AlertCircle, AlertTriangle, Bell, CheckCircle, Info, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { AppNotification } from "@/types";
+
+export interface Notification {
+  id: string;
+  type: "success" | "error" | "warning" | "info";
+  title: string;
+  message: string;
+  timestamp: Date;
+  read?: boolean;
+}
 
 interface NotificationsProps {
-  notifications: AppNotification[];
-  unreadCount: number;
+  notifications: Notification[];
   onMarkAsRead: (id: string) => void;
   onDismiss: (id: string) => void;
 }
@@ -27,9 +34,10 @@ const colorMap = {
   info: "text-blue-600 bg-blue-50 border-blue-200"
 };
 
-export function Notifications({ notifications, unreadCount, onMarkAsRead, onDismiss }: NotificationsProps) {
+export function Notifications({ notifications, onMarkAsRead, onDismiss }: NotificationsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const unreadCount = notifications.filter((item) => !item.read).length;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -70,17 +78,17 @@ export function Notifications({ notifications, unreadCount, onMarkAsRead, onDism
                 return (
                   <div
                     key={notification.id}
-                    className={`p-4 ${colorMap[notification.type]} ${!notification.readAt ? "bg-opacity-75" : ""}`}
+                    className={`p-4 ${colorMap[notification.type]} ${!notification.read ? "bg-opacity-75" : ""}`}
                   >
                     <div className="flex items-start gap-3">
                       <Icon className="mt-0.5 h-5 w-5 flex-shrink-0" />
                       <div className="min-w-0 flex-1">
                         <h4 className="text-sm font-medium">{notification.title}</h4>
                         <p className="mt-1 text-sm opacity-90">{notification.message}</p>
-                        <p className="mt-2 text-xs opacity-70">{new Date(notification.createdAt).toLocaleString()}</p>
+                        <p className="mt-2 text-xs opacity-70">{notification.timestamp.toLocaleString()}</p>
                       </div>
                       <div className="flex gap-1">
-                        {!notification.readAt ? (
+                        {!notification.read ? (
                           <Button
                             variant="ghost"
                             size="sm"

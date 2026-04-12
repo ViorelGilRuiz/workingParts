@@ -3,10 +3,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { clients as seedClients, reports as seedReports, teamMembers } from "@/data/demo";
 import { useAuth } from "@/components/providers/auth-provider";
-import { useWorkspace } from "@/components/providers/workspace-provider";
 import { createWorkingPartsRepository } from "@/lib/data";
 import { getReportAnalytics } from "@/lib/report-analytics";
-import { Client, WorkReport } from "@/types";
+import { ActivityItem, Client, ReportDraft, SavedReportFilters, UserPreferences, WorkReport } from "@/types";
 
 interface CreateClientInput {
   name: string;
@@ -17,24 +16,7 @@ interface CreateClientInput {
   sla: string;
 }
 
-interface CreateReportInput {
-  client: string;
-  company: string;
-  contact: string;
-  technicianId: string;
-  date: string;
-  type: string;
-  category: string;
-  priority: WorkReport["priority"];
-  status: WorkReport["status"];
-  startTime: string;
-  endTime: string;
-  reason: string;
-  workDone: string;
-  solution: string;
-  observations?: string;
-  hasSignature: boolean;
-}
+interface CreateReportInput extends ReportDraft {}
 
 interface ReportsContextValue {
   reports: WorkReport[];
@@ -42,15 +24,33 @@ interface ReportsContextValue {
   hydrated: boolean;
   storageStrategy: "local-browser" | "supabase";
   analytics: ReturnType<typeof getReportAnalytics>;
-  createClient: (input: CreateClientInput) => Client;
+  preferences: UserPreferences | null;
+  recentActivity: ActivityItem[];
+  suggestedClients: Client[];
+  createClient: (input: CreateClientInput) => { client: Client; isDuplicate: boolean };
   createReport: (input: CreateReportInput) => WorkReport;
   getReportById: (id: string) => WorkReport | undefined;
   updateReport: (id: string, updates: Partial<WorkReport>) => void;
   deleteReport: (id: string) => void;
+  updatePreferences: (updates: Partial<UserPreferences>) => void;
+  saveReportDraft: (draft: ReportDraft) => void;
+  clearReportDraft: () => void;
+  setSavedReportFilters: (filters: SavedReportFilters) => void;
+  rememberSearch: (query: string) => void;
+  trackRouteVisit: (route: string) => void;
 }
 
 const ReportsContext = createContext<ReportsContextValue | null>(null);
 const DEFAULT_HOURLY_RATE = 50;
+const DEFAULT_FILTERS: SavedReportFilters = {
+  query: "",
+  status: "Todos",
+  priority: "Todas",
+  category: "Todas",
+  sortBy: "recent",
+  compactView: false,
+  showExtraColumns: true
+};
 
 function normalizeReport(report: WorkReport): WorkReport {
   return {
@@ -69,6 +69,14 @@ function normalizeClient(client: Client): Client {
     monthlyHours: client.monthlyHours ?? 0,
     recurringIssues: client.recurringIssues ?? 0
   };
+}
+
+function normalizeText(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function normalizeClientKey(name: string, company: string) {
+  return `${normalizeText(name).toLowerCase()}::${normalizeText(company).toLowerCase()}`;
 }
 
 function getNextReportId(items: WorkReport[], reportDate: string) {
@@ -101,14 +109,44 @@ function buildTags(category: string, reason: string) {
 }
 
 function createClientId() {
-  return `c-${Math.random().toString(36).slice(2, 10)}`;
+  return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `c-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function createActivity(type: ActivityItem["type"], title: string, description: string, entityId?: string): ActivityItem {
+  return {
+    id: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `a-${Math.random().toString(36).slice(2, 10)}`,
+    type,
+    title,
+    description,
+    entityId,
+    createdAt: new Date().toISOString()
+  };
+}
+
+function createDefaultPreferences(userId: string): UserPreferences {
+  return {
+    userId,
+    favoriteView: "/app/dashboard",
+    lastVisitedRoute: "/app/dashboard",
+    recentClients: [],
+    recentTechnicians: [],
+    recentSearches: [],
+    savedReportFilters: DEFAULT_FILTERS,
+    reportDraft: null
+  };
+}
+
+function limitRecent(items: string[], value: string, max = 6) {
+  const normalized = normalizeText(value);
+  return [normalized, ...items.filter((item) => item.toLowerCase() !== normalized.toLowerCase())].slice(0, max);
 }
 
 export function ReportsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { recordActivity, pushNotification, savePreferences, preferences } = useWorkspace();
   const [reports, setReports] = useState<WorkReport[]>(seedReports);
   const [clients, setClients] = useState<Client[]>(seedClients);
+  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const repository = useMemo(() => createWorkingPartsRepository(), []);
 
@@ -130,6 +168,22 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
   }, [repository]);
 
   useEffect(() => {
+    if (!hydrated || !user) return;
+
+    const syncUserState = async () => {
+      const [storedPreferences, storedActivity] = await Promise.all([
+        repository.loadPreferences(user.id),
+        repository.loadActivity(user.id)
+      ]);
+
+      setPreferences(storedPreferences ?? createDefaultPreferences(user.id));
+      setRecentActivity(storedActivity.slice(0, 12));
+    };
+
+    void syncUserState();
+  }, [hydrated, repository, user]);
+
+  useEffect(() => {
     if (!hydrated) return;
     void repository.saveReports(reports);
   }, [hydrated, reports, repository]);
@@ -139,70 +193,142 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
     void repository.saveClients(clients);
   }, [clients, hydrated, repository]);
 
+  useEffect(() => {
+    if (!hydrated || !preferences || !user) return;
+    void repository.savePreferences(preferences);
+  }, [hydrated, preferences, repository, user]);
+
+  useEffect(() => {
+    if (!hydrated || !user) return;
+    void repository.saveActivity(user.id, recentActivity);
+  }, [hydrated, recentActivity, repository, user]);
+
+  const pushActivity = useCallback((item: ActivityItem) => {
+    setRecentActivity((current) => [item, ...current].slice(0, 12));
+  }, []);
+
+  const updatePreferences = useCallback((updates: Partial<UserPreferences>) => {
+    setPreferences((current) => {
+      if (!user) return current;
+      const base = current ?? createDefaultPreferences(user.id);
+      return { ...base, ...updates };
+    });
+  }, [user]);
+
+  const trackRouteVisit = useCallback((route: string) => {
+    if (!user) return;
+
+    setPreferences((current) => {
+      const base = current ?? createDefaultPreferences(user.id);
+      if (base.lastVisitedRoute === route) return base;
+      return {
+        ...base,
+        lastVisitedRoute: route,
+        favoriteView: base.favoriteView || route
+      };
+    });
+  }, [user]);
+
+  const rememberSearch = useCallback((query: string) => {
+    if (!user || !query.trim()) return;
+
+    setPreferences((current) => {
+      const base = current ?? createDefaultPreferences(user.id);
+      return {
+        ...base,
+        recentSearches: limitRecent(base.recentSearches, query)
+      };
+    });
+  }, [user]);
+
+  const setSavedReportFilters = useCallback((filters: SavedReportFilters) => {
+    if (!user) return;
+
+    setPreferences((current) => {
+      const base = current ?? createDefaultPreferences(user.id);
+      return {
+        ...base,
+        savedReportFilters: filters
+      };
+    });
+  }, [user]);
+
+  const saveReportDraft = useCallback((draft: ReportDraft) => {
+    if (!user) return;
+
+    setPreferences((current) => {
+      const base = current ?? createDefaultPreferences(user.id);
+      return {
+        ...base,
+        reportDraft: draft
+      };
+    });
+  }, [user]);
+
+  const clearReportDraft = useCallback(() => {
+    if (!user) return;
+
+    setPreferences((current) => {
+      const base = current ?? createDefaultPreferences(user.id);
+      return {
+        ...base,
+        reportDraft: null
+      };
+    });
+  }, [user]);
+
   const createClient = useCallback((input: CreateClientInput) => {
-    const normalizedName = input.name.trim().toLowerCase();
-    const existing = clients.find((item) => item.name.trim().toLowerCase() === normalizedName);
+    const normalizedName = normalizeText(input.name);
+    const normalizedCompany = normalizeText(input.company);
+    const existing = clients.find((item) => normalizeClientKey(item.name, item.company) === normalizeClientKey(normalizedName, normalizedCompany));
 
     if (existing) {
-      return existing;
+      return { client: existing, isDuplicate: true };
     }
 
     const createdClient: Client = {
       id: createClientId(),
-      name: input.name.trim(),
-      company: input.company.trim(),
-      contact: input.contact.trim(),
-      sector: input.sector.trim(),
-      city: input.city.trim(),
+      name: normalizedName,
+      company: normalizedCompany,
+      contact: normalizeText(input.contact),
+      sector: normalizeText(input.sector),
+      city: normalizeText(input.city),
       monthlyHours: 0,
       recurringIssues: 0,
       sla: input.sla.trim()
     };
 
     setClients((current) => [createdClient, ...current]);
-    if (user) {
-      void recordActivity({
-        actorUserId: user.id,
-        actorName: user.name,
-        type: "report_updated",
-        entityType: "client",
-        entityId: createdClient.id,
-        title: "Cliente registrado",
-        description: `${user.name} ha creado el cliente ${createdClient.name}.`
-      });
-    }
-    return createdClient;
-  }, [clients, recordActivity, user]);
+    pushActivity(createActivity("client_created", "Cliente creado", `${createdClient.name} ya forma parte de la cartera.`, createdClient.id));
+    return { client: createdClient, isDuplicate: false };
+  }, [clients, pushActivity]);
 
   const updateReport = useCallback((id: string, updates: Partial<WorkReport>) => {
-    setReports((current) => current.map((report) => (report.id === id ? { ...report, ...updates } : report)));
-    if (user) {
-      void recordActivity({
-        actorUserId: user.id,
-        actorName: user.name,
-        type: "report_updated",
-        entityType: "report",
-        entityId: id,
-        title: "Parte actualizado",
-        description: `${user.name} ha actualizado el parte ${id}.`
-      });
-    }
-  }, [recordActivity, user]);
+    setReports((current) =>
+      current.map((report) => {
+        if (report.id !== id) return report;
+        return { ...report, ...updates };
+      })
+    );
+
+    pushActivity(createActivity("report_updated", "Parte actualizado", `Se ha actualizado el parte ${id}.`, id));
+  }, [pushActivity]);
 
   const deleteReport = useCallback((id: string) => {
     setReports((current) => current.filter((report) => report.id !== id));
-    if (user) {
-      void recordActivity({
-        actorUserId: user.id,
-        actorName: user.name,
-        type: "report_deleted",
-        entityType: "report",
-        entityId: id,
-        title: "Parte eliminado",
-        description: `${user.name} ha eliminado el parte ${id}.`
-      });
-    }
-  }, [recordActivity, user]);
+    pushActivity(createActivity("report_deleted", "Parte eliminado", `Se ha eliminado el parte ${id}.`, id));
+  }, [pushActivity]);
+
+  const suggestedClients = useMemo(() => {
+    if (!preferences?.recentClients?.length) return clients;
+
+    const order = new Map(preferences.recentClients.map((item, index) => [item.toLowerCase(), index]));
+    return [...clients].sort((a, b) => {
+      const aRank = order.get(a.name.toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+      const bRank = order.get(b.name.toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+      return aRank - bRank || a.name.localeCompare(b.name);
+    });
+  }, [clients, preferences?.recentClients]);
 
   const value = useMemo<ReportsContextValue>(
     () => ({
@@ -211,6 +337,9 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
       hydrated,
       storageStrategy: repository.strategy,
       analytics: getReportAnalytics(reports),
+      preferences,
+      recentActivity,
+      suggestedClients,
       createClient,
       createReport: (input) => {
         const selectedClient = clients.find((item) => item.name.trim().toLowerCase() === input.client.trim().toLowerCase());
@@ -222,9 +351,9 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
           throw new Error("No se ha podido asociar el tecnico.");
         }
 
-        const clientName = selectedClient?.name ?? input.client.trim();
-        const company = selectedClient?.company ?? (input.company.trim() || clientName);
-        const contact = selectedClient?.contact ?? (input.contact.trim() || "Pendiente de definir");
+        const clientName = selectedClient?.name ?? normalizeText(input.client);
+        const company = selectedClient?.company ?? (normalizeText(input.company) || clientName);
+        const contact = selectedClient?.contact ?? (normalizeText(input.contact) || "Pendiente de definir");
 
         const newReport: WorkReport = {
           id: getNextReportId(reports, input.date),
@@ -240,9 +369,9 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
           startTime: input.startTime,
           endTime: input.endTime,
           durationHours: getDurationHours(input.startTime, input.endTime),
-          reason: input.reason.trim(),
-          workDone: input.workDone.trim(),
-          solution: input.solution.trim(),
+          reason: normalizeText(input.reason),
+          workDone: normalizeText(input.workDone),
+          solution: normalizeText(input.solution),
           observations: input.observations?.trim() ?? "",
           status: input.status,
           hasSignature: input.hasSignature,
@@ -256,41 +385,52 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
         };
 
         setReports((current) => [newReport, ...current]);
+
         if (user) {
-          void Promise.all([
-            recordActivity({
-              actorUserId: user.id,
-              actorName: user.name,
-              type: "report_created",
-              entityType: "report",
-              entityId: newReport.id,
-              title: "Parte registrado",
-              description: `${user.name} ha registrado el parte ${newReport.id} para ${newReport.client}.`
-            }),
-            pushNotification({
-              userId: user.id,
-              type: newReport.status === "Pendiente" ? "warning" : "success",
-              category: newReport.status === "Pendiente" ? "review" : "report",
-              title: newReport.status === "Pendiente" ? "Parte pendiente de revision" : "Parte guardado",
-              message:
-                newReport.status === "Pendiente"
-                  ? `${newReport.id} ha quedado pendiente y visible para seguimiento.`
-                  : `${newReport.id} se ha guardado correctamente para ${newReport.client}.`,
-              link: `/app/partes/${newReport.id}`
-            }),
-            savePreferences({
-              recentClientIds: Array.from(new Set([newReport.client, ...(preferences?.recentClientIds ?? [])])).slice(0, 6),
-              recentReportIds: Array.from(new Set([newReport.id, ...(preferences?.recentReportIds ?? [])])).slice(0, 8)
-            })
-          ]);
+          setPreferences((current) => {
+            const base = current ?? createDefaultPreferences(user.id);
+            return {
+              ...base,
+              recentClients: limitRecent(base.recentClients, clientName),
+              recentTechnicians: limitRecent(base.recentTechnicians, technician.id),
+              reportDraft: null
+            };
+          });
         }
+
+        pushActivity(createActivity("report_created", "Parte creado", `${newReport.id} para ${clientName}.`, newReport.id));
         return newReport;
       },
       getReportById: (id) => reports.find((report) => report.id === id),
       updateReport,
-      deleteReport
+      deleteReport,
+      updatePreferences,
+      saveReportDraft,
+      clearReportDraft,
+      setSavedReportFilters,
+      rememberSearch,
+      trackRouteVisit
     }),
-    [clients, createClient, deleteReport, hydrated, preferences?.recentClientIds, preferences?.recentReportIds, pushNotification, recordActivity, reports, repository.strategy, savePreferences, updateReport, user]
+    [
+      clients,
+      createClient,
+      deleteReport,
+      hydrated,
+      preferences,
+      recentActivity,
+      rememberSearch,
+      reports,
+      repository.strategy,
+      saveReportDraft,
+      setSavedReportFilters,
+      suggestedClients,
+      trackRouteVisit,
+      updatePreferences,
+      updateReport,
+      user,
+      clearReportDraft,
+      pushActivity
+    ]
   );
 
   return <ReportsContext.Provider value={value}>{children}</ReportsContext.Provider>;
