@@ -49,7 +49,7 @@ interface WorkspaceContextValue {
 }
 
 const fallbackOrganization: Organization = {
-  id: "org-default",
+  id: "workspace-local",
   name: appEnv.companyName,
   slug: appEnv.companyName.toLowerCase().replace(/\s+/g, "-")
 };
@@ -61,7 +61,7 @@ const seedProfiles: UserProfile[] = [currentUser, ...teamMembers.filter((member)
   role: member.role,
   avatar: member.avatar,
   avatarUrl: member.avatarUrl,
-  organizationId: fallbackOrganization.id,
+  organizationId: null,
   organizationName: fallbackOrganization.name,
   title: member.role === "admin" ? "Administracion" : member.role === "supervisor" ? "Supervisor de servicio" : "Tecnico",
   department: "Operaciones IT",
@@ -107,7 +107,7 @@ function buildProfile({
     role,
     avatar: getAvatarLabel(fullName, email),
     avatarUrl,
-    organizationId: fallbackOrganization.id,
+    organizationId: null,
     organizationName: fallbackOrganization.name,
     title: role === "admin" ? "Administracion" : role === "supervisor" ? "Supervisor de servicio" : "Tecnico",
     department: "Operaciones IT",
@@ -226,8 +226,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
               role: item.role,
               avatar: getAvatarLabel(item.full_name, item.email),
               avatarUrl: item.avatar_url ?? undefined,
-              organizationId: item.organization_id,
-              organizationName: fallbackOrganization.name,
+              organizationId: item.organization_id ?? null,
+              organizationName: item.organization_id ? fallbackOrganization.name : null,
               title: item.job_title ?? undefined,
               department: item.department ?? undefined,
               phone: item.phone ?? undefined,
@@ -345,7 +345,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           full_name: user.name,
           role: user.role,
           avatar_url: user.avatarUrl ?? null,
-          organization_id: fallbackOrganization.id,
+          organization_id: null,
           last_active_at: new Date().toISOString()
         },
         { onConflict: "id" }

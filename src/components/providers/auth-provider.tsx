@@ -220,6 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loginWithGoogle: async (nextPath = "/app/dashboard") => {
         const supabase = getSupabaseBrowserClient();
         const safeNextPath = getSafeAppPath(nextPath);
+        const runtimeOrigin = typeof window !== "undefined" ? window.location.origin : undefined;
 
         if (!isCloudAuthEnabled || !supabase) {
           return { ok: false, message: "Google Login requiere configurar Supabase Auth." };
@@ -228,7 +229,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: getAuthCallbackUrl(safeNextPath),
+            redirectTo: getAuthCallbackUrl(safeNextPath, runtimeOrigin),
             queryParams: {
               access_type: "offline",
               prompt: "select_account"
