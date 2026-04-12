@@ -157,7 +157,7 @@ export function ReportForm() {
       reason: values.reason,
       workDone: values.workDone,
       solution: values.solution,
-      observations: values.observations ?? "",
+      observations: values.observations,
       hasSignature: values.hasSignature
     });
 
@@ -201,7 +201,7 @@ export function ReportForm() {
       reason: values.reason.trim() || "Borrador pendiente de completar",
       workDone: values.workDone.trim() || "Pendiente de documentar",
       solution: values.solution.trim() || "Pendiente de documentar",
-      observations: values.observations ?? "",
+      observations: values.observations,
       hasSignature: values.hasSignature
     });
 

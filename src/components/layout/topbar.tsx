@@ -18,7 +18,7 @@ const quickFilterMap: Record<string, string> = {
   Cliente: "cliente"
 };
 
-export function Topbar({ title, subtitle }: { title: string; subtitle?: string }) {
+export function Topbar({ title, subtitle }: { title: string; subtitle: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isCloudAuthEnabled } = useAuth();
@@ -49,7 +49,7 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
     <header className="sticky top-3 z-20 space-y-4 rounded-[30px] border border-border/70 bg-card/78 p-4 shadow-soft backdrop-blur lg:top-6 lg:p-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">{subtitle ?? "Centro de trabajo"}</p>
+          <p className="text-sm text-muted-foreground">{subtitle}</p>
           <h2 className="text-3xl font-extrabold tracking-tight">{title}</h2>
           <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-primary">
             <Sparkles className="h-3.5 w-3.5" />

@@ -80,20 +80,7 @@ export const userPreferencesSchema = z.object({
   recentTechnicians: z.array(z.string()),
   recentSearches: z.array(z.string()),
   savedReportFilters: savedReportFiltersSchema,
-  reportDraft: reportDraftSchema.nullable(),
-  reducedMotion: z.boolean().default(false),
-  compactTables: z.boolean().default(false),
-  savedFilters: z
-    .array(
-      z.object({
-        id: z.string(),
-        name: z.string(),
-        query: z.string()
-      })
-    )
-    .default([]),
-  recentClientIds: z.array(z.string()).default([]),
-  recentReportIds: z.array(z.string()).default([])
+  reportDraft: reportDraftSchema.nullable()
 });
 
 export const activityItemSchema = z.object({
