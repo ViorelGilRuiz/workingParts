@@ -130,16 +130,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       let mounted = true;
+      setHydrated(true);
       const syncSession = async () => {
         try {
           const sessionResult = await supabase.auth.getSession();
           if (!mounted) return;
           setUser(sessionResult.data.session?.user ? mapSupabaseUser(sessionResult.data.session.user) : null);
-          setHydrated(true);
         } catch {
           if (!mounted) return;
           setUser(null);
-          setHydrated(true);
         }
       };
 
