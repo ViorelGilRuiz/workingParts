@@ -163,7 +163,7 @@ function LoginPageContent() {
         </section>
 
         <section>
-            <Card className="relative z-10 space-y-5 rounded-[34px] border-border/70 bg-card/92 p-5 shadow-soft lg:p-6">
+          <Card className="space-y-5 rounded-[34px] border-border/70 bg-card/92 p-5 shadow-soft lg:p-6">
             <div className="space-y-2">
               <h2 className="text-3xl font-extrabold tracking-tight">Iniciar sesion</h2>
               <p className="text-sm text-muted-foreground">

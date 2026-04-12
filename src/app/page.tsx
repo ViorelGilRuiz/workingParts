@@ -42,7 +42,7 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <div className="relative z-10 flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3">
                 <Button asChild size="lg">
                   <Link href="/login">
                     Entrar en la aplicacion
