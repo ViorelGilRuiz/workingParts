@@ -7,6 +7,10 @@ export interface User {
   email: string;
   avatar: string;
   avatarUrl?: string;
+  jobTitle?: string;
+  phone?: string;
+  location?: string;
+  bio?: string;
   authSource?: "local" | "supabase";
 }
 

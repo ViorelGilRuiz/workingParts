@@ -15,7 +15,7 @@ export function UserAvatar({ name, avatar, avatarUrl, className, textClassName }
   if (avatarUrl) {
     return (
       <div className={cn("relative overflow-hidden rounded-2xl bg-primary/10", className)}>
-        <Image src={avatarUrl} alt={name ?? "Usuario"} fill sizes="48px" className="object-cover" />
+        <Image src={avatarUrl} alt={name ?? "Usuario"} fill sizes="48px" unoptimized className="object-cover" />
       </div>
     );
   }

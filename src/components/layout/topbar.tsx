@@ -64,7 +64,7 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
   };
 
   return (
-    <header className="sticky top-3 z-20 rounded-[32px] border border-border/70 bg-card/82 p-4 shadow-soft backdrop-blur lg:top-6 lg:p-5">
+    <header className="sticky top-3 z-20 rounded-[32px] border border-border/70 bg-card/90 p-4 shadow-soft lg:top-6 lg:p-5">
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
         <div className="space-y-4">
           <div className="space-y-2">
@@ -85,7 +85,7 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -113,10 +113,10 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
           </div>
         </div>
 
-        <div className="grid gap-3 xl:min-w-[360px]">
-          <div className="relative overflow-hidden rounded-[28px] border border-border/70 bg-background/60 p-4">
+        <div className="grid gap-3 xl:min-w-[340px]">
+          <div className="relative overflow-hidden rounded-[28px] border border-border/70 bg-background/72 p-4">
             <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${roleInfo.accent}`} />
-            <div className="relative flex items-center gap-4">
+            <div className="relative flex items-start gap-4">
               <UserAvatar
                 name={user?.name}
                 avatar={user?.avatar}
@@ -125,12 +125,13 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
               />
 
               <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-semibold">{user?.name ?? "Sin usuario"}</p>
+                <p className="break-words text-base font-semibold leading-5">{user?.name ?? "Sin usuario"}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${roleInfo.chip}`}>
                     {roleInfo.label}
                   </span>
                 </div>
+                {user?.jobTitle ? <p className="mt-2 text-xs text-muted-foreground">{user.jobTitle}</p> : null}
               </div>
 
               <Notifications notifications={notifications} onMarkAsRead={handleMarkAsRead} onDismiss={handleDismiss} />

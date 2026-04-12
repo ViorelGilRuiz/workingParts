@@ -255,6 +255,22 @@ body {
     radial-gradient(circle at 50% 120%, rgba(20, 184, 166, 0.08), transparent 28%);
 }
 
+.app-shell-auth {
+  scroll-behavior: auto;
+}
+
+.app-shell-auth *,
+.app-shell-auth *::before,
+.app-shell-auth *::after {
+  animation: none !important;
+  transition-duration: 0ms !important;
+}
+
+.app-shell-auth .surface-elevated::after,
+.app-shell-auth .hero-mesh {
+  display: none !important;
+}
+
 .tech-depth-grid {
   background-image:
     linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),

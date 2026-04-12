@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronRight, LogOut, Sparkles } from "lucide-react";
@@ -47,7 +46,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="glass-panel flex h-full flex-col rounded-[36px] border border-border/70 p-4 shadow-soft backdrop-blur lg:p-5">
+    <aside className="glass-panel flex h-full flex-col rounded-[36px] border border-border/70 p-4 shadow-soft lg:p-5">
       <div className="mb-6 flex items-center justify-between gap-3">
         <Link href="/app/dashboard" className="flex items-center gap-3">
           <div className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-gradient-to-br from-primary/22 via-primary/10 to-transparent text-lg font-extrabold text-primary">
@@ -64,30 +63,30 @@ export function Sidebar() {
         </div>
       </div>
 
-      <div className="mb-5 overflow-hidden rounded-[30px] border border-border/60 bg-background/55 p-4">
-        <div className={`pointer-events-none absolute`} />
-        <div className="flex items-center gap-3">
+      <div className="mb-5 rounded-[30px] border border-border/60 bg-background/55 p-4">
+        <div className="flex items-start gap-3">
           <UserAvatar
             name={user?.name}
             avatar={user?.avatar}
             avatarUrl={user?.avatarUrl}
             className="h-14 w-14 rounded-[20px] ring-1 ring-white/10"
           />
-          <div className="min-w-0">
-            <p className="truncate text-base font-semibold">{user?.name ?? "Invitado"}</p>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="break-words text-[15px] font-semibold leading-5 text-foreground">{user?.name ?? "Invitado"}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${currentRole.chip}`}>
                 {currentRole.label}
               </span>
-                </div>
-              </div>
+            </div>
+            {user?.jobTitle ? <p className="mt-2 text-xs text-muted-foreground">{user.jobTitle}</p> : null}
+          </div>
         </div>
 
-        <div className="mt-4 flex gap-2">
-          <Button variant="subtle" className="flex-1" asChild>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <Button variant="subtle" className="w-full" asChild>
             <Link href="/app/perfil">Perfil</Link>
           </Button>
-          <Button variant="outline" className="flex-1" onClick={handleLogout}>
+          <Button variant="outline" className="w-full" onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             Salir
           </Button>
@@ -104,18 +103,14 @@ export function Sidebar() {
               href={item.href}
               prefetch={false}
               className={cn(
-                "group relative flex min-w-[250px] items-center gap-4 overflow-hidden rounded-[26px] border px-4 py-4 text-left transition lg:min-w-0 lg:w-full",
+                "group relative flex min-w-[250px] items-center gap-4 overflow-hidden rounded-[26px] border px-4 py-4 text-left lg:min-w-0 lg:w-full",
                 isActive
                   ? "border-primary/18 text-primary-foreground shadow-soft"
                   : "border-border/60 bg-background/34 text-muted-foreground hover:border-primary/20 hover:bg-muted/45 hover:text-foreground"
               )}
             >
               {isActive ? (
-                <motion.span
-                  layoutId="sidebar-active-pill"
-                  className="absolute inset-0 rounded-[26px] bg-primary"
-                  transition={{ type: "spring", stiffness: 320, damping: 28 }}
-                />
+                <span className="absolute inset-0 rounded-[26px] bg-primary" />
               ) : null}
 
               <span className="relative z-10 flex h-12 w-12 items-center justify-center rounded-2xl bg-background/60 text-primary shadow-sm">
@@ -128,7 +123,7 @@ export function Sidebar() {
 
               <ChevronRight
                 className={cn(
-                  "relative z-10 h-4 w-4 transition-transform",
+                  "relative z-10 h-4 w-4",
                   isActive ? "translate-x-0" : "translate-x-[-4px] opacity-0 group-hover:translate-x-0 group-hover:opacity-100"
                 )}
               />

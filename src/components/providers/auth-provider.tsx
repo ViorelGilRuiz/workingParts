@@ -11,6 +11,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const USERS_STORAGE_KEY = "portal-incidencias-auth-users";
 const SESSION_STORAGE_KEY = "portal-incidencias-auth-session";
+const PROFILE_STORAGE_KEY = "portal-incidencias-user-profiles";
 
 interface StoredAuthUser extends User {
   company?: string;
@@ -38,6 +39,7 @@ interface AuthContextValue {
   loginWithGoogle: (nextPath?: string) => Promise<{ ok: true } | { ok: false; message: string }>;
   register: (input: RegisterInput) => Promise<{ ok: true } | { ok: false; message: string }>;
   logout: () => Promise<void>;
+  updateProfile: (patch: Partial<Pick<User, "name" | "avatarUrl" | "jobTitle" | "phone" | "location" | "bio">>) => void;
 }
 
 const seedUsers: StoredAuthUser[] = [
@@ -56,6 +58,10 @@ const seedUsers: StoredAuthUser[] = [
 ];
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+function buildAvatarLabel(name?: string, email?: string) {
+  return getAvatarLabel(name ?? "Usuario", email);
+}
 
 function toPublicUser(user: StoredAuthUser): User {
   return {
@@ -89,6 +95,41 @@ function dedupeUsers(items: StoredAuthUser[]) {
   });
 }
 
+function getStoredProfiles() {
+  if (typeof window === "undefined") {
+    return {} as Record<string, Partial<User>>;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(PROFILE_STORAGE_KEY);
+    if (!raw) {
+      return {};
+    }
+
+    const parsed = JSON.parse(raw) as Record<string, Partial<User>>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function mergeProfile(baseUser: User, profiles: Record<string, Partial<User>>) {
+  const override = profiles[baseUser.id];
+
+  if (!override) {
+    return baseUser;
+  }
+
+  const mergedName = override.name?.trim() || baseUser.name;
+
+  return {
+    ...baseUser,
+    ...override,
+    name: mergedName,
+    avatar: buildAvatarLabel(mergedName, baseUser.email)
+  };
+}
+
 function mapSupabaseUser(user: SupabaseUser): User {
   const fullName =
     user.user_metadata.full_name ??
@@ -116,10 +157,14 @@ function mapSupabaseUser(user: SupabaseUser): User {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = useState<StoredAuthUser[]>(seedUsers);
   const [user, setUser] = useState<User | null>(null);
+  const [profiles, setProfiles] = useState<Record<string, Partial<User>>>({});
   const [hydrated, setHydrated] = useState(false);
   const isCloudAuthEnabled = isSupabaseConfigured();
 
   useEffect(() => {
+    const storedProfiles = getStoredProfiles();
+    setProfiles(storedProfiles);
+
     if (isCloudAuthEnabled) {
       const supabase = getSupabaseBrowserClient();
 
@@ -133,7 +178,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const sessionResult = await supabase.auth.getSession();
           if (!mounted) return;
-          setUser(sessionResult.data.session?.user ? mapSupabaseUser(sessionResult.data.session.user) : null);
+          setUser(
+            sessionResult.data.session?.user
+              ? mergeProfile(mapSupabaseUser(sessionResult.data.session.user), storedProfiles)
+              : null
+          );
           setHydrated(true);
         } catch {
           if (!mounted) return;
@@ -147,7 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: { subscription }
       } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
         if (!mounted) return;
-        setUser(session?.user ? mapSupabaseUser(session.user) : null);
+        setUser(session?.user ? mergeProfile(mapSupabaseUser(session.user), storedProfiles) : null);
       });
 
       return () => {
@@ -172,7 +221,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (savedSession) {
         const sessionUser = availableUsers.find((item) => item.id === savedSession);
         if (sessionUser) {
-          setUser(toPublicUser(sessionUser));
+          setUser(mergeProfile(toPublicUser(sessionUser), storedProfiles));
         }
       }
     } finally {
@@ -184,6 +233,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated || isCloudAuthEnabled) return;
     window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
   }, [hydrated, isCloudAuthEnabled, users]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profiles));
+  }, [hydrated, profiles]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -208,7 +262,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const publicUser = toPublicUser(foundUser);
-        setUser(publicUser);
+        setUser(mergeProfile(publicUser, profiles));
         window.localStorage.setItem(SESSION_STORAGE_KEY, foundUser.id);
         return { ok: true };
       },
@@ -266,7 +320,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
 
         setUsers((current) => [...current, createdUser]);
-        setUser(toPublicUser(createdUser));
+        setUser(mergeProfile(toPublicUser(createdUser), profiles));
         window.localStorage.setItem(SESSION_STORAGE_KEY, createdUser.id);
         return { ok: true };
       },
@@ -280,9 +334,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setUser(null);
         window.localStorage.removeItem(SESSION_STORAGE_KEY);
+      },
+      updateProfile: (patch) => {
+        setUser((currentUser) => {
+          if (!currentUser) {
+            return currentUser;
+          }
+
+          const normalizedName = patch.name?.trim();
+          const nextUser: User = {
+            ...currentUser,
+            ...patch,
+            name: normalizedName || currentUser.name,
+            avatar: buildAvatarLabel(normalizedName || currentUser.name, currentUser.email)
+          };
+
+          setProfiles((currentProfiles) => ({
+            ...currentProfiles,
+            [currentUser.id]: {
+              ...currentProfiles[currentUser.id],
+              ...patch,
+              name: normalizedName || currentUser.name,
+              avatar: buildAvatarLabel(normalizedName || currentUser.name, currentUser.email)
+            }
+          }));
+
+          if (!isCloudAuthEnabled) {
+            setUsers((currentUsers) =>
+              currentUsers.map((item) =>
+                item.id === currentUser.id
+                  ? {
+                      ...item,
+                      name: normalizedName || currentUser.name,
+                      avatar: buildAvatarLabel(normalizedName || currentUser.name, currentUser.email),
+                      avatarUrl: patch.avatarUrl ?? currentUser.avatarUrl,
+                      jobTitle: patch.jobTitle ?? currentUser.jobTitle,
+                      phone: patch.phone ?? currentUser.phone,
+                      location: patch.location ?? currentUser.location,
+                      bio: patch.bio ?? currentUser.bio
+                    }
+                  : item
+              )
+            );
+          }
+
+          return nextUser;
+        });
       }
     }),
-    [hydrated, isCloudAuthEnabled, user, users]
+    [hydrated, isCloudAuthEnabled, profiles, user, users]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
