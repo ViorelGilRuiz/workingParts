@@ -1,7 +1,7 @@
 import { clients as seedClients, reports as seedReports } from "@/data/demo";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { WorkingPartsRepository } from "@/lib/data/repository";
-import { Client, WorkReport } from "@/types";
+import { ActivityItem, Client, UserPreferences, WorkReport } from "@/types";
 
 function normalizeClient(client: Client): Client {
   return {
@@ -153,6 +153,108 @@ export function createSupabaseBrowserRepository(): WorkingPartsRepository {
           tags: report.tags
         })),
         { onConflict: "report_number" }
+      );
+    },
+    async loadPreferences(userId) {
+      const supabase = getSupabaseBrowserClient();
+      if (!supabase) return null;
+
+      const { data, error } = await supabase.from("user_preferences").select("*").eq("user_id", userId).maybeSingle();
+      if (error || !data) return null;
+
+      return {
+        userId,
+        favoriteView: data.favorite_view ?? "/app/dashboard",
+        lastVisitedRoute: data.last_visited_route ?? "/app/dashboard",
+        recentClients: Array.isArray(data.recent_clients) ? data.recent_clients : [],
+        recentTechnicians: Array.isArray(data.recent_technicians) ? data.recent_technicians : [],
+        recentSearches: Array.isArray(data.recent_searches) ? data.recent_searches : [],
+        savedReportFilters: data.saved_report_filters ?? {
+          query: "",
+          status: "Todos",
+          priority: "Todas",
+          category: "Todas",
+          sortBy: "recent",
+          compactView: false,
+          showExtraColumns: true
+        },
+        reportDraft: data.report_draft ?? null,
+        reducedMotion: Boolean(data.reduced_motion ?? true),
+        compactTables: Boolean(data.compact_tables ?? false),
+        savedFilters: Array.isArray(data.saved_filters) ? data.saved_filters : [],
+        recentClientIds: Array.isArray(data.recent_client_ids) ? data.recent_client_ids : [],
+        recentReportIds: Array.isArray(data.recent_report_ids) ? data.recent_report_ids : []
+      };
+    },
+    async savePreferences(preferences) {
+      const supabase = getSupabaseBrowserClient();
+      if (!supabase) return;
+
+      await supabase.from("user_preferences").upsert(
+        {
+          user_id: preferences.userId,
+          favorite_view: preferences.favoriteView,
+          last_visited_route: preferences.lastVisitedRoute,
+          recent_clients: preferences.recentClients,
+          recent_technicians: preferences.recentTechnicians,
+          recent_searches: preferences.recentSearches,
+          saved_report_filters: preferences.savedReportFilters,
+          report_draft: preferences.reportDraft,
+          reduced_motion: preferences.reducedMotion,
+          compact_tables: preferences.compactTables,
+          saved_filters: preferences.savedFilters,
+          recent_client_ids: preferences.recentClientIds,
+          recent_report_ids: preferences.recentReportIds
+        },
+        { onConflict: "user_id" }
+      );
+    },
+    async loadActivity(userId) {
+      const supabase = getSupabaseBrowserClient();
+      if (!supabase) return [];
+
+      const { data, error } = await supabase
+        .from("recent_activity")
+        .select("*")
+        .eq("actor_user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (error || !data) return [];
+
+      return data.map((item: any): ActivityItem => ({
+        id: item.id,
+        type:
+          item.event_type === "report_deleted"
+            ? "report_deleted"
+            : item.event_type === "report_updated"
+              ? "report_updated"
+              : item.event_type === "client_created"
+                ? "client_created"
+                : "report_created",
+        title: item.title,
+        description: item.description,
+        entityId: item.entity_id,
+        createdAt: item.created_at
+      }));
+    },
+    async saveActivity(userId, items) {
+      const supabase = getSupabaseBrowserClient();
+      if (!supabase) return;
+
+      await supabase.from("recent_activity").upsert(
+        items.map((item) => ({
+          id: item.id,
+          actor_user_id: userId,
+          actor_name: "Usuario",
+          event_type: item.type,
+          entity_type: "report",
+          entity_id: item.entityId ?? item.id,
+          title: item.title,
+          description: item.description,
+          created_at: item.createdAt
+        })),
+        { onConflict: "id" }
       );
     }
   };
