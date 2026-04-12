@@ -77,7 +77,7 @@ function LoginPageContent() {
       return;
     }
 
-    if (oauthError === "missing_oauth_code" || oauthError === "missing_code") {
+    if (oauthError === "missing_oauth_code") {
       setError("El flujo de acceso no devolvio un codigo valido.");
     }
   }, [oauthError]);

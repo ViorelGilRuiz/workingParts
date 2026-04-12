@@ -32,25 +32,9 @@ async function updateSession(request: NextRequest) {
     }
   });
 
-  let user = null;
-
-  try {
-    const {
-      data: { user: sessionUser }
-    } = await supabase.auth.getUser();
-    user = sessionUser;
-  } catch {
-    const { pathname } = request.nextUrl;
-
-    if (pathname.startsWith("/app")) {
-      const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = "/login";
-      loginUrl.search = `?next=${encodeURIComponent(pathname)}`;
-      return NextResponse.redirect(loginUrl);
-    }
-
-    return response;
-  }
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
 
   const { pathname, search } = request.nextUrl;
 

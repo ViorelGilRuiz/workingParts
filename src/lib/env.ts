@@ -31,7 +31,7 @@ export function getSafeAppPath(nextPath?: string | null) {
   return nextPath;
 }
 
-export function getAuthCallbackUrl(nextPath = "/app/dashboard", origin?: string | null) {
-  const baseUrl = (origin || appEnv.siteUrl).replace(/\/$/, "");
+export function getAuthCallbackUrl(nextPath = "/app/dashboard") {
+  const baseUrl = appEnv.siteUrl.replace(/\/$/, "");
   return `${baseUrl}/auth/callback?next=${encodeURIComponent(getSafeAppPath(nextPath))}`;
 }
